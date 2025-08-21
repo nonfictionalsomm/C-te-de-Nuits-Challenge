@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Côte de Nuits: A Wine Master's Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-content {
+            max-height: 80vh;
+        }
+        .prose-purple a {
+            color: #9333ea;
+        }
+        .prose-purple a:hover {
+            color: #7e22ce;
+        }
+        .timeline-item.selected {
+            background-color: #6b21a8;
+            color: white;
+        }
+        .flashcard-container {
+            perspective: 1000px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .flashcard-front {
+            background-color: #374151; /* gray-700 */
+        }
+        .flashcard-back {
+            background-color: #4b5563; /* gray-600 */
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <div id="main-menu" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <h1 class="text-4xl md:text-5xl font-bold text-purple-400 mb-2 text-center">Côte de Nuits</h1>
+        <h2 class="text-2xl md:text-3xl font-semibold mb-8 text-center">A Wine Master's Challenge</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl mb-8">
+            <button data-module="historian" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                <h3 class="text-xl font-bold mb-2">The Historian's Scroll</h3>
+                <p class="text-gray-400">Order the key events that shaped the Côte de Nuits.</p>
+            </button>
+            <button data-module="terroir" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                <h3 class="text-xl font-bold mb-2">The Terroir Architect</h3>
+                <p class="text-gray-400">Master the soils, climate, and geography.</p>
+            </button>
+            <button data-module="ampelographer" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                <h3 class="text-xl font-bold mb-2">The Ampelographer's Challenge</h3>
+                <p class="text-gray-400">Identify the region's key grape varieties and clones.</p>
+            </button>
+            <button data-module="lawmaker" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                <h3 class="text-xl font-bold mb-2">The Lawmaker's Desk</h3>
+                <p class="text-gray-400">Navigate the complexities of AOC law and winemaking regulations.</p>
+            </button>
+            <button data-module="gastronome" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                <h3 class="text-xl font-bold mb-2">The Gastronome's Table</h3>
+                <p class="text-gray-400">Explore classic food pairings and local cuisine.</p>
+            </button>
+            <button data-module="critic" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300">
+                <h3 class="text-xl font-bold mb-2">The Critic's Corner</h3>
+                <p class="text-gray-400">Analyze vintages and iconic producers.</p>
+            </button>
+        </div>
+
+        <div class="w-full max-w-4xl">
+             <button data-module="flashcard" class="module-btn bg-gray-800 p-6 rounded-lg hover:bg-purple-700 transition-colors duration-300 w-full">
+                <h3 class="text-xl font-bold mb-2">Flashcard Study</h3>
+                <p class="text-gray-400">Build your knowledge with targeted review.</p>
+            </button>
+        </div>
+    	
+        <button id="ai-settings-btn" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+            ⚙️ AI Settings
+        </button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <!-- Content will be injected here -->
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+        <div id="modal-content-wrapper" class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl modal-content overflow-y-auto">
+            <!-- Modal content will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        // This object contains all the game data, sourced from the master document.
+        const gameData = {
+            historian: {
+                title: "The Historian's Scroll",
+                instructions: "For each of the 5 challenges, arrange the historical events in chronological order from earliest to latest. Tap an event to add it to your timeline, then submit your answer.",
+                questions: [
+                    {
+                        question: "Arrange these foundational events from Roman and Monastic times in Burgundy.",
+                        events: [
+                            { text: "Viticulture begins with Roman settlers in Gaul.", date: 100 }, // 1st Century AD
+                            { text: "Gregory of Tours praises the region's wines, comparing them to Falernian.", date: 591 },
+                            { text: "The Benedictine Abbey of Cluny is founded, beginning monastic stewardship of vineyards.", date: 910 },
+                            { text: "The Cistercian order is founded at Cîteaux, refining the concept of terroir.", date: 1098 },
+                            { text: "The Cistercians establish Burgundy's largest walled vineyard, the Clos de Vougeot.", date: 1336 },
+                        ]
+                    },
+                    {
+                        question: "Order the key events of the Ducal era and the French Revolution's impact.",
+                        events: [
+                            { text: "Duke Philip the Bold issues his edict banning the Gamay grape from the Côte d'Or.", date: 1395 },
+                            { text: "The French Revolution leads to the confiscation and auction of church and aristocracy lands.", date: 1789 },
+                            { text: "The Napoleonic Code is introduced, mandating equal inheritance and causing vineyard fragmentation.", date: 1804 },
+                            { text: "The first major négociant houses, like Maison Champy, are established.", date: 1720 },
+                            { text: "Dr. Jules Lavalle publishes his classification of Burgundy's terroirs, not estates.", date: 1855 },
+                        ]
+                    },
+                    {
+                        question: "Place these critical legal and modern quality milestones in the correct order.",
+                        events: [
+                            { text: "The INAO is created to legally define and regulate French wine appellations.", date: 1935 },
+                            { text: "The first Burgundy AOCs for the Côte de Nuits are officially decreed.", date: 1936 },
+                            { text: "Henri Jayer begins to set a new benchmark for quality with his non-interventionist winemaking.", date: 1970 }, // Approx start of his major influence
+                            { text: "La Grande Rue is promoted to Grand Cru status.", date: 1992 },
+                            { text: "The Climats of Burgundy are inscribed as a UNESCO World Heritage site.", date: 2015 },
+                        ]
+                    },
+                    {
+                        question: "Sequence the establishment of these key Grand Cru vineyards and their legal status.",
+                        events: [
+                            { text: "The Cistercians acquire the land for Clos de Vougeot.", date: 1109 },
+                            { text: "The Prince of Conti purchases the vineyard that will bear his name, Romanée-Conti.", date: 1760 },
+                            { text: "Clos de Tart is decreed as a Grand Cru AOC.", date: 1939 },
+                            { text: "Clos des Lambrays is elevated to Grand Cru status.", date: 1981 },
+                            { text: "Domaine de la Romanée-Conti acquires its largest parcel of Romanée-Saint-Vivant.", date: 1988 },
+                        ]
+                    },
+                    {
+                        question: "Organize the timeline of key figures and their defining impact on the Côte de Nuits.",
+                        events: [
+                            { text: "Duke Philip the Bold codifies Pinot Noir as the noble grape of the region.", date: 1395 },
+                            { text: "Dr. Jules Lavalle provides the intellectual framework for the AOC system by classifying terroirs.", date: 1855 },
+                            { text: "Charles Rousseau is among the first pioneers of domaine bottling.", date: 1920 },
+                            { text: "Henri Jayer pioneers pre-fermentation cold maceration and champions low yields.", date: 1970 }, // Approx.
+                            { text: "Lalou Bize-Leroy becomes a beacon for biodynamic viticulture at Domaine Leroy.", date: 1988 }, // When she took full control
+                        ]
+                    }
+                ]
+            },
+            terroir: {
+                title: "The Terroir Architect",
+                instructions: "Answer 10 multiple-choice questions about the geology, geography, and climate of the Côte de Nuits.",
+                questions: [
+                    { q: "The Côte de Nuits is the northern half of which prominent limestone escarpment?", a: "Côte d'Or", o: ["Massif Central", "Vosges Mountains", "Jura Mountains"] },
+                    { q: "What is the general orientation of the slopes in the Côte de Nuits, maximizing morning sun exposure?", a: "East and Southeast", o: ["South and Southwest", "West and Northwest", "North and Northeast"] },
+                    { q: "The most prestigious Grand Cru vineyards are almost exclusively located at what altitude range?", a: "250 to 300 meters", o: ["150 to 200 meters", "350 to 400 meters", "Below 150 meters"] },
+                    { q: "What is the term for the dry, transverse valleys that punctuate the slope and create alluvial fans?", a: "Combes", o: ["Cirques", "Cluses", "Reculées"] },
+                    { q: "The bedrock of the Côte de Nuits was exposed due to the collapse of which rift valley?", a: "Bressan Rift Valley", o: ["Rhine Graben", "Limagne Fault", "Po Valley"] },
+                    { q: "The alternating strata of limestone and calcareous clay that form the bedrock are from which geological period?", a: "Jurassic", o: ["Cretaceous", "Triassic", "Tertiary"] },
+                    { q: "What is the French term for limestone, which provides excellent drainage and aromatic finesse?", a: "Calcaire", o: ["Marne", "Argile", "Silex"] },
+                    { q: "What is the French term for marl, a calcareous clay that contributes power and structure to wines?", a: "Marne", o: ["Calcaire", "Schiste", "Granite"] },
+                    { q: "Which specific type of hard, pink-hued limestone is found in the mid-slope of the Côte de Nuits?", a: "Premeaux limestone", o: ["Kimmeridgian marl", "Portlandian limestone", "Tuffeau"] },
+                    { q: "The soils of the Côte de Nuits are almost universally classified as what type?", a: "Clay-limestone (argilo-calcaire)", o: ["Sandy loam", "Volcanic tuff", "Alluvial silt"] },
+                    { q: "At the highest elevations of the vineyard area, the thin, stony soils are classified as what?", a: "Rendzinas", o: ["Podzols", "Vertisols", "Histosols"] },
+                    { q: "The reddish-brown color of the mid-slope Grand Cru soils is due to a higher content of what?", a: "Iron oxide", o: ["Manganese", "Copper", "Magnesium"] },
+                    { q: "The climate of the Côte de Nuits is classified as what?", a: "Semi-continental", o: ["Maritime", "Mediterranean", "Alpine"] },
+                    { q: "According to the Winkler scale, the Côte de Nuits' GDD of ~1325°C places it in which climate region?", a: "Region Ib", o: ["Region II", "Region Ia", "Region III"] },
+                    { q: "What is the most significant viticultural risk in the spring due to earlier budburst from climate change?", a: "Spring frosts", o: ["Drought", "Heatwaves", "Excessive rain"] },
+                    { q: "The Côte de Nuits stretches for approximately how many miles from Dijon to Corgoloin?", a: "15 miles (24 km)", o: ["30 miles (48 km)", "5 miles (8 km)", "50 miles (80 km)"] },
+                    { q: "Village-level vineyards are typically located where on the slope?", a: "At the base, on deeper, richer soils", o: ["On the mid-slope with optimal balance", "At the top, on thin, stony soils", "On west-facing slopes"] },
+                    { q: "Which French Geological Survey maintains the authoritative geological maps for the region?", a: "BRGM (Bureau de Recherches Géologiques et Minières)", o: ["INAO", "BIVB", "IFREMER"] },
+                    { q: "What is the approximate average annual precipitation in the Côte de Nuits?", a: "729 mm", o: ["550 mm", "900 mm", "1100 mm"] },
+                    { q: "The Combe de Lavaux is a significant geographical feature near which village?", a: "Gevrey-Chambertin", o: ["Vosne-Romanée", "Chambolle-Musigny", "Nuits-Saint-Georges"] },
+                    { q: "What is the primary benefit of the slope's eastern orientation in a semi-continental climate?", a: "It promotes slow, even ripening while avoiding harsh afternoon sun.", o: ["It protects vines from northern winds.", "It increases total rainfall.", "It reduces the risk of hail."] },
+                    { q: "The formation of the Côte d'Or escarpment occurred during which geological period?", a: "Tertiary", o: ["Jurassic", "Quaternary", "Cretaceous"] },
+                    { q: "What is the primary viticultural characteristic of porous Oolitic limestone found higher on the slope?", a: "It is easily penetrated by vine roots.", o: ["It retains a high amount of water.", "It is rich in organic matter.", "It has a low pH."] },
+                    { q: "What is the approximate average July-August temperature in Burgundy?", a: "20°C (68°F)", o: ["15°C (59°F)", "25°C (77°F)", "18°C (64°F)"] },
+                    { q: "Which of these is NOT a primary climatic risk in the Côte de Nuits?", a: "Drought in winter", o: ["Spring frosts", "Summer hailstorms", "Rain at harvest"] },
+                    { q: "The soils at the base of the slope have a higher proportion of clay and what other component?", a: "Fine alluvial silt", o: ["Large limestone boulders", "Volcanic ash", "Sand"] },
+                    { q: "The high-calcium content of Comblanchien limestone makes it suitable for quarrying as what?", a: "Marble", o: ["Granite", "Slate", "Sandstone"] },
+                    { q: "What is the primary negative effect of deeper, more fertile soils on the lower slopes?", a: "It can lead to excessive vine vigor and higher yields.", o: ["It causes poor drainage and root rot.", "It results in low acidity in the grapes.", "It prevents deep root penetration."] },
+                    { q: "The Côte de Nuits is located near which parallel north, defining its marginal climate?", a: "47th parallel", o: ["45th parallel", "49th parallel", "43rd parallel"] },
+                    { q: "What is the primary role of the cool breezes channeled by the combes?", a: "To moderate temperatures and reduce disease pressure", o: ["To increase the risk of frost", "To accelerate ripening", "To cause wind damage to vines"] },
+                    { q: "The geological 'mille-feuille' structure refers to alternating layers of limestone and what?", a: "Marl", o: ["Sandstone", "Shale", "Granite"] },
+                    { q: "What is the approximate width of the vineyard band in the Côte de Nuits?", a: "One to two kilometers", o: ["Five to ten kilometers", "Less than 500 meters", "Over ten kilometers"] },
+                    { q: "The Bourgogne Hautes-Côtes de Nuits appellation is located where in relation to the main slope?", a: "Above the main slope, at higher altitudes", o: ["Below the main slope, on the plain", "To the east of the D974 road", "In the city of Dijon"] },
+                    { q: "The optimal balance of soil depth, drainage, and sun exposure is found in which part of the slope?", a: "Mid-slope", o: ["Upper slope", "Lower slope", "The plateau"] },
+                    { q: "The tectonic event that created the Côte d'Or was related to the formation of what mountain range?", a: "The Alps", o: ["The Pyrenees", "The Appalachians", "The Urals"] },
+                    { q: "What is the primary benefit of limestone's porosity for viticulture?", a: "Excellent drainage", o: ["Water retention", "High nutrient content", "Heat absorption"] },
+                    { q: "What is the primary benefit of marl's clay content for viticulture?", a: "Water retention", o: ["Excellent drainage", "Low fertility", "High pH"] },
+                    { q: "What is the approximate GDD for the month of July in the Côte de Nuits?", a: "335", o: ["249", "149", "183"] },
+                    { q: "Which month receives the highest average precipitation?", a: "May", o: ["July", "September", "February"] },
+                    { q: "The lack of irrigation, forbidden by AOC law, makes the region highly dependent on what?", a: "Adequate and timely rainfall", o: ["Deep root systems", "Drought-resistant rootstocks", "High humidity"] },
+                    { q: "The high degree of vintage-to-vintage variation is a defining feature of which climate type?", a: "Semi-continental", o: ["Maritime", "Mediterranean", "Tropical"] },
+                    { q: "The soils of the Côte de Nuits are derived from the weathering of which type of rock?", a: "Sedimentary", o: ["Igneous", "Metamorphic", "Volcanic"] },
+                    { q: "What is the primary reason the lower slopes produce wines that may lack aromatic finesse?", a: "Deeper, more fertile soils lead to less concentrated fruit.", o: ["They receive less sun exposure.", "The soils are too acidic.", "They are prone to waterlogging."] },
+                    { q: "The 'sweet spot' for Grand Cru vineyards is largely defined by an equilibrium between soil drainage and what?", a: "Sufficient water retention from clay", o: ["High organic matter", "Protection from wind", "Deep topsoil"] },
+                    { q: "The geological history of the region is characterized by the exposure of ancient seabeds from which era?", a: "Mesozoic Era (Jurassic Period)", o: ["Cenozoic Era", "Paleozoic Era", "Precambrian Eon"] },
+                    { q: "Which village is located at the southern end of the Côte de Nuits?", a: "Corgoloin", o: ["Dijon", "Gevrey-Chambertin", "Marsannay"] },
+                    { q: "The shallow rendzina soils of the upper slope produce wines that are typically what?", a: "Highly aromatic and elegant", o: ["Powerful and structured", "Simple and fruity", "Low in acidity"] },
+                    { q: "The alluvial fans at the mouths of combes contribute to what aspect of the terroir?", a: "Increased soil diversity between adjacent parcels", o: ["Uniform soil composition across the slope", "Poor drainage", "High soil fertility"] },
+                    { q: "What is the main viticultural consequence of the region's cold winters?", a: "They force the vines into a complete dormancy.", o: ["They increase the risk of trunk diseases.", "They damage the root systems.", "They require protective covering for the vines."] },
+                    { q: "The moderating influence from the Atlantic Ocean primarily brings what to the region?", a: "Rainfall", o: ["Cooling breezes", "Warm air currents", "Fog"] }
+                ]
+            },
+            ampelographer: {
+                title: "The Ampelographer's Challenge",
+                instructions: "Answer 10 multiple-choice questions about the key grape varieties and clones of the Côte de Nuits. After a correct answer, you may have the option to generate an AI profile.",
+                questions: [
+                    { q: "What percentage of the Côte de Nuits' plantings is accounted for by Pinot Noir?", a: "95%", o: ["85%", "75%", "100%"], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "Which white grape is permitted in small quantities in Musigny Grand Cru?", a: "Chardonnay", o: ["Aligoté", "Pinot Blanc", "Sauvignon Blanc"], subjectType: 'grape', subjectName: 'Chardonnay' },
+                    { q: "What is the maximum percentage of accessory white grapes legally permitted in a co-planted Gevrey-Chambertin vineyard?", a: "15%", o: ["10%", "5%", "20%"], subjectType: 'law', subjectName: 'Gevrey-Chambertin Encépagement' },
+                    { q: "Pinot Noir's thin skin makes it particularly susceptible to which fungal disease?", a: "Botrytis cinerea (Grey Mould)", o: ["Eutypa dieback", "Flavescence dorée", "Powdery Mildew"], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "Which white grape is a color mutation of Pinot Noir?", a: "Pinot Blanc", o: ["Chardonnay", "Aligoté", "Sacy"], subjectType: 'grape', subjectName: 'Pinot Blanc' },
+                    { q: "Which clonal mutant of Pinot Noir, discovered in Gevrey-Chambertin, is known for higher yields?", a: "Pinot Liébault", o: ["Pinot Meunier", "Pinot Teinturier", "Pinot Droit"], subjectType: 'clone', subjectName: 'Pinot Liébault' },
+                    { q: "The official certification of grapevine clones in France is overseen by which institution?", a: "INRAE/ENTAV", o: ["INAO", "BIVB", "BRGM"], subjectType: 'viticulture', subjectName: 'Clonal Selection' },
+                    { q: "Which Dijon clone of Pinot Noir is the most widely planted and considered the 'complete' clone?", a: "115", o: ["777", "113", "667"], subjectType: 'clone', subjectName: 'Pinot Noir Clone 115' },
+                    { q: "Which Dijon clone is known for its very intense, dark color and powerful structure due to thick skins?", a: "777", o: ["114", "115", "828"], subjectType: 'clone', subjectName: 'Pinot Noir Clone 777' },
+                    { q: "What is the traditional practice of propagating new vines from a range of superior old vines in a single vineyard called?", a: "Sélection massale", o: ["Sélection clonale", "Provignage", "Marcottage"], subjectType: 'viticulture', subjectName: 'Sélection Massale' },
+                    { q: "What is the legally mandated minimum planting density in the Côte de Nuits?", a: "9,000 vines per hectare", o: ["5,000 vines per hectare", "7,000 vines per hectare", "12,000 vines per hectare"], subjectType: 'law', subjectName: 'Planting Density' },
+                    { q: "What is the most common pruning system used in the Côte de Nuits?", a: "Guyot simple", o: ["Cordon de Royat", "Gobelet", "Double Guyot"], subjectType: 'viticulture', subjectName: 'Guyot Pruning' },
+                    { q: "What is the primary reason for the high planting density in the Côte de Nuits?", a: "To force vines to compete, driving roots deep and limiting yield.", o: ["To maximize land usage and total production.", "To facilitate mechanical harvesting.", "To provide better shade for the grapes."], subjectType: 'viticulture', subjectName: 'Planting Density' },
+                    { q: "Which Chardonnay clone is known as a 'muscaté' clone for its distinct aromatic profile?", a: "809", o: ["76", "95", "548"], subjectType: 'clone', subjectName: 'Chardonnay Clone 809' },
+                    { q: "Which grape variety is legally permitted for the white wine of the Premier Cru 'Monts Luisants' in Morey-Saint-Denis?", a: "Aligoté", o: ["Chardonnay", "Pinot Blanc", "Pinot Gris"], subjectType: 'grape', subjectName: 'Aligoté' },
+                    { q: "Which of these is NOT a permitted accessory white grape in red Gevrey-Chambertin?", a: "Aligoté", o: ["Chardonnay", "Pinot Blanc", "Pinot Gris"], subjectType: 'law', subjectName: 'Gevrey-Chambertin Encépagement' },
+                    { q: "The genetic instability of Pinot Noir makes it highly prone to what?", a: "Mutation", o: ["Drought", "Over-ripening", "Frost damage"], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "Which Dijon clone is known for being lower yielding and providing structure with thick yet soft tannins?", a: "667", o: ["113", "115", "943"], subjectType: 'clone', subjectName: 'Pinot Noir Clone 667' },
+                    { q: "Which disease, spread by leafhoppers, is caused by phytoplasma bacteria and has no cure?", a: "Flavescence dorée", o: ["Esca", "Eutypa dieback", "Court-noué (Fanleaf)"], subjectType: 'viticulture', subjectName: 'Flavescence Dorée' },
+                    { q: "What is the viticultural term for poor fruit set, to which Pinot Liébault can be prone?", a: "Coulure", o: ["Millerandage", "Veraison", "Shatter"], subjectType: 'viticulture', subjectName: 'Coulure' },
+                    { q: "Which grape is known as Weissburgunder in Germany?", a: "Pinot Blanc", o: ["Pinot Gris", "Chardonnay", "Sylvaner"], subjectType: 'grape', subjectName: 'Pinot Blanc' },
+                    { q: "Which grape is known as Grauburgunder in Germany?", a: "Pinot Gris", o: ["Pinot Blanc", "Riesling", "Gewürztraminer"], subjectType: 'grape', subjectName: 'Pinot Gris' },
+                    { q: "The 'Dijon clones' of Pinot Noir originated from cuttings taken from which Grand Cru vineyard?", a: "Clos de la Roche", o: ["Chambertin", "Romanée-Conti", "Musigny"], subjectType: 'clone', subjectName: 'Dijon Clones' },
+                    { q: "What is the primary viticultural challenge associated with Pinot Noir's early budding?", a: "Vulnerability to spring frosts", o: ["Susceptibility to mildew", "Uneven ripening", "Low sugar accumulation"], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "Which clonal selection of Pinot Noir is characterized by an upright growth habit and higher yields?", a: "Pinot Droit", o: ["Pinot Fin", "Pinot Liébault", "Pinot Teinturier"], subjectType: 'clone', subjectName: 'Pinot Droit' },
+                    { q: "Which clonal selection of Pinot Noir is characterized by lower yields and more concentrated juice?", a: "Pinot Fin", o: ["Pinot Droit", "Pinot Meunier", "Pinot Précoce"], subjectType: 'clone', subjectName: 'Pinot Fin' },
+                    { q: "What is the common vine training system that uses a permanent arm rather than a one-year-old cane?", a: "Cordon de Royat", o: ["Guyot simple", "Gobelet", "Lyre"], subjectType: 'viticulture', subjectName: 'Cordon de Royat' },
+                    { q: "Which grapevine trunk disease infects the permanent wood of the vine through pruning wounds?", a: "Esca", o: ["Downy Mildew", "Black Rot", "Anthracnose"], subjectType: 'viticulture', subjectName: 'Esca' },
+                    { q: "What is the primary reason many producers plant several different clones within a single vineyard?", a: "To achieve greater complexity in the final wine", o: ["To increase overall yield", "To simplify harvesting", "To meet legal requirements"], subjectType: 'viticulture', subjectName: 'Clonal Selection' },
+                    { q: "Which Dijon clone is known for its fine, floral, elegant aromas and is suited for medium-term aging?", a: "113", o: ["114", "115", "777"], subjectType: 'clone', subjectName: 'Pinot Noir Clone 113' },
+                    { q: "Which Dijon clone is known for its strong color, tannic structure, and suitability for long aging?", a: "114", o: ["113", "828", "943"], subjectType: 'clone', subjectName: 'Pinot Noir Clone 114' },
+                    { q: "Which of these is NOT a color mutation of Pinot Noir?", a: "Pinot Meunier", o: ["Pinot Blanc", "Pinot Gris", "Pinot Liébault"], subjectType: 'grape', subjectName: 'Pinot Family' },
+                    { q: "The tight, pine cone-shaped bunches of Pinot Noir make it particularly susceptible to what?", a: "Botrytis bunch rot", o: ["Sunburn", "Bird damage", "Frost"], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "What is the primary characteristic of Pinot Gris berries?", a: "They have a greyish-blue to pinkish-brown color.", o: ["They are large and seedless.", "They have very thick skins.", "They are naturally low in sugar."], subjectType: 'grape', subjectName: 'Pinot Gris' },
+                    { q: "In modern viticulture, what has largely replaced the historical practice of provignage (layering)?", a: "Replanting with cuttings (clones or massal selection)", o: ["Grafting onto new rootstocks", "Using seeds for propagation", "Air layering"], subjectType: 'viticulture', subjectName: 'Vine Propagation' },
+                    { q: "Which of these is a primary goal of the Guyot simple pruning system?", a: "To restrict the number of buds and control crop load", o: ["To encourage vegetative growth", "To create a large, permanent vine structure", "To protect the vine from frost"], subjectType: 'viticulture', subjectName: 'Guyot Pruning' },
+                    { q: "The trend of earlier budburst in Burgundy is a direct consequence of what?", a: "Climate change and warmer springs", o: ["New clonal selections", "Changes in pruning techniques", "Soil depletion"], subjectType: 'viticulture', subjectName: 'Climate Change Impact' },
+                    { q: "What is the primary vector for the spread of grapevine fanleaf virus (court-noué)?", a: "Soil nematodes (Xiphinema index)", o: ["Leafhopper insects", "Aphids", "Fungal spores"], subjectType: 'viticulture', subjectName: 'Grapevine Fanleaf Virus' },
+                    { q: "Which insect has been blamed for green, pyrazine-like off-flavors in some red wine vintages?", a: "Harmonia axyridis (Asian lady beetle)", o: ["Grapevine moth", "Phylloxera", "Spider mites"], subjectType: 'viticulture', subjectName: 'Pest Management' },
+                    { q: "What is the primary characteristic of Chardonnay that makes it more adaptable than Pinot Noir?", a: "It is relatively hardy and productive.", o: ["It buds late, avoiding frost.", "It is resistant to all fungal diseases.", "It has very thick skins."], subjectType: 'grape', subjectName: 'Chardonnay' },
+                    { q: "Which Dijon Clone is the lowest yielding, known for adding structure and intense red berry flavors?", a: "943", o: ["113", "667", "828"], subjectType: 'clone', subjectName: 'Pinot Noir Clone 943' },
+                    { q: "The use of cover crops in modern viticulture is primarily for what purpose?", a: "To minimize erosion and enrich biodiversity", o: ["To increase vine vigor", "To eliminate the need for pruning", "To repel all insect pests"], subjectType: 'viticulture', subjectName: 'Cover Crops' },
+                    { q: "Which of these is a traditional, non-synthetic spray used in organic viticulture to combat mildew?", a: "Copper-based sprays (Bordeaux mixture)", o: ["Systemic fungicides", "Nitrogen fertilizers", "Herbicides"], subjectType: 'viticulture', subjectName: 'Organic Viticulture' },
+                    { q: "The practice of co-planting different varieties in a field blend is a relic of what?", a: "Historical planting practices before modern clonal selection", o: ["A legal requirement to increase biodiversity", "A method to confuse pests", "A way to ensure even ripening"], subjectType: 'viticulture', subjectName: 'Field Blends' },
+                    { q: "Which grape variety is a natural crossing of Pinot and Gouais Blanc?", a: "Chardonnay", o: ["Syrah", "Cabernet Sauvignon", "Merlot"], subjectType: 'grape', subjectName: 'Chardonnay' },
+                    { q: "What is the primary reason that accessory white grapes are almost never used in high-quality red Côte de Nuits today?", a: "Producers seek the purest possible expression of Pinot Noir.", o: ["They are now illegal in Grand Cru vineyards.", "They are too difficult to grow.", "They reduce the wine's aging potential."], subjectType: 'viticulture', subjectName: 'Pinot Noir Purity' },
+                    { q: "Which of these is a key characteristic of Chardonnay clone 76?", a: "Aromatic intensity and balance", o: ["High vigor and productivity", "Distinct muscat-like aromas", "Very low acidity"], subjectType: 'clone', subjectName: 'Chardonnay Clone 76' },
+                    { q: "The genetic library of Pinot Noir contains how many distinct clones?", a: "Hundreds", o: ["Exactly ten", "Less than five", "Around fifty"], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "What is the primary challenge of Pinot Noir's tight bunches?", a: "They can encourage the spread of botrytis.", o: ["They are difficult to harvest.", "They lead to uneven ripening.", "They have a low juice-to-skin ratio."], subjectType: 'grape', subjectName: 'Pinot Noir' },
+                    { q: "Which of these is NOT a primary grape variety of the Côte de Nuits?", a: "Gamay", o: ["Pinot Noir", "Chardonnay", "Pinot Blanc"], subjectType: 'grape', subjectName: 'Côte de Nuits Grapes' }
+                ]
+            },
+            lawmaker: {
+                title: "The Lawmaker's Desk",
+                instructions: "Answer 10 multiple-choice questions about the appellation laws and winemaking regulations of the Côte de Nuits.",
+                questions: [
+                    { q: "Which French governmental organization is responsible for creating and regulating all AOCs?", a: "INAO", o: ["BIVB", "BRGM", "CIVB"] },
+                    { q: "What is the primary role of the BIVB (Bureau Interprofessionnel des Vins de Bourgogne)?", a: "Promotion, market research, and technical assistance", o: ["Enforcing appellation laws", "Classifying vineyards", "Setting wine prices"] },
+                    { q: "What is the highest tier in the Burgundy appellation hierarchy?", a: "Grand Cru", o: ["Premier Cru", "Village", "Régionale"] },
+                    { q: "How are Premier Cru appellations legally defined?", a: "As a geographical designation within a Village AOC", o: ["As standalone AOCs", "As a producer-led classification", "By the BIVB"] },
+                    { q: "What is the legal document that details all permitted production methods for an AOC?", a: "Cahier des charges", o: ["Décret de l'appellation", "Règlement intérieur", "Code rural"] },
+                    { q: "In Gevrey-Chambertin, what is the minimum potential alcohol for a Premier Cru wine?", a: "11.0%", o: ["10.5%", "11.5%", "12.0%"] },
+                    { q: "Is irrigation permitted in the Côte de Nuits under AOC law?", a: "No, it is strictly forbidden.", o: ["Yes, in drought years with special permission.", "Yes, but only for young vines.", "Yes, for all vineyards."] },
+                    { q: "A Grand Cru wine from the Côte de Nuits must be labeled with the name of the climat and what other designation?", a: "Grand Cru", o: ["The village name", "The producer's name only", "Premier Cru"] },
+                    { q: "Which of these is a Régionale appellation?", a: "Bourgogne Hautes-Côtes de Nuits", o: ["Gevrey-Chambertin", "Clos de Vougeot", "Vosne-Romanée 1er Cru"] },
+                    { q: "What is the term for a vineyard, regardless of classification, that is under the sole ownership of one domaine?", a: "Monopole", o: ["Clos", "Climat", "Lieu-dit"] },
+                    { q: "What is the quintessential Burgundian term for a precisely delimited vineyard plot with its own unique terroir?", a: "Climat", o: ["Lieu-dit", "Cru", "Parcelle"] },
+                    { q: "Which famous Grand Cru is a monopole of Domaine de la Romanée-Conti?", a: "La Tâche", o: ["Clos de Vougeot", "Chambertin", "Bonnes-Mares"] },
+                    { q: "The first Burgundy AOCs were established in which year?", a: "1936", o: ["1925", "1945", "1955"] },
+                    { q: "If a wine is a blend of several Premier Cru climats from the same village, how must it be labeled?", a: "With the village name and 'Premier Cru' only", o: ["With the name of the largest climat", "It must be declassified to Village level.", "With a proprietary fantasy name"] },
+                    { q: "What is the smallest AOP in all of France?", a: "La Romanée", o: ["Romanée-Conti", "Griotte-Chambertin", "La Grande Rue"] },
+                    { q: "In which village is white wine production permitted in its Grand Cru (Musigny)?", a: "Chambolle-Musigny", o: ["Gevrey-Chambertin", "Vosne-Romanée", "Nuits-Saint-Georges"] },
+                    { q: "Which Grand Cru was the last to be elevated to its status, in 1992?", a: "La Grande Rue", o: ["Clos des Lambrays", "Clos de Tart", "Bonnes-Mares"] },
+                    { q: "Producers in which Grand Cru AOP may also label their wine as Charmes-Chambertin?", a: "Mazoyères-Chambertin", o: ["Griotte-Chambertin", "Chapelle-Chambertin", "Latricières-Chambertin"] },
+                    { q: "What is the maximum yield (Rendement de Base) for a red Grand Cru like Chambertin?", a: "42 hl/ha", o: ["35 hl/ha", "50 hl/ha", "55 hl/ha"] },
+                    { q: "The addition of sugar to must to increase alcohol, known as chaptalization, is what in Burgundy?", a: "Legal and common", o: ["Strictly illegal", "Legal only for white wines", "Frowned upon but not illegal"] },
+                    { q: "Which Grand Cru is the largest in the Côte de Nuits at over 50 hectares?", a: "Clos de Vougeot", o: ["Echézeaux", "Chambertin", "Corton"] },
+                    { q: "What does the term 'lieu-dit' literally mean?", a: "A named place", o: ["A walled vineyard", "A noble plot", "A single parcel"] },
+                    { q: "Which two villages can produce wine under the Côte de Nuits-Villages AOP?", a: "Fixin and Corgoloin", o: ["Gevrey-Chambertin and Vosne-Romanée", "Marsannay and Chambolle-Musigny", "Vougeot and Morey-Saint-Denis"] },
+                    { q: "Manual harvesting is legally mandatory for which level of wine?", a: "Monopole Grand Crus", o: ["All Premier Crus", "All Village wines", "All AOC wines"] },
+                    { q: "The INAO was created primarily to combat what problem in the early 20th century?", a: "Widespread fraud", o: ["Phylloxera", "Overproduction", "Low prices"] },
+                    { q: "What is the term for a vineyard historically enclosed by a stone wall?", a: "Clos", o: ["Climat", "Cru", "Cadastre"] },
+                    { q: "Which village is the only one in the Côte de Nuits legally permitted to produce Village AOP rosé?", a: "Marsannay", o: ["Fixin", "Gevrey-Chambertin", "Nuits-Saint-Georges"] },
+                    { q: "The legal framework of the AOC system is based on the classification work of whom?", a: "Dr. Jules Lavalle", o: ["Henri Jayer", "Philip the Bold", "Napoleon Bonaparte"] },
+                    { q: "Which Grand Cru is split between the villages of Morey-Saint-Denis and Chambolle-Musigny?", a: "Bonnes-Mares", o: ["Musigny", "Clos de la Roche", "Clos de Tart"] },
+                    { q: "What is the minimum must weight for a red Grand Cru wine like Romanée-Conti?", a: "198 g/l", o: ["180 g/l", "189 g/l", "205 g/l"] },
+                    { q: "The AOC laws are a legal ratification of a hierarchy based on what?", a: "Terroir and historical reputation", o: ["Producer quality", "Market price", "Grape variety"] },
+                    { q: "Which of these is NOT a Grand Cru in Gevrey-Chambertin?", a: "Clos Saint-Jacques", o: ["Mazis-Chambertin", "Griotte-Chambertin", "Ruchottes-Chambertin"] },
+                    { q: "What is the legal status of the wines from Flagey-Echézeaux?", a: "They are labeled as Vosne-Romanée AOP", o: ["They have their own Village AOP", "They are declassified to Bourgogne AOP", "They are part of Nuits-Saint-Georges AOP"] },
+                    { q: "What is the maximum residual sugar allowed for a red Grand Cru?", a: "2 g/l", o: ["3 g/l", "4 g/l", "There is no limit"] },
+                    { q: "The UNESCO World Heritage status was granted to what specific aspect of Burgundy?", a: "The Climats", o: ["The Châteaux", "The winemaking techniques", "The BIVB"] },
+                    { q: "Which Grand Cru was elevated from Premier Cru status in 1981?", a: "Clos des Lambrays", o: ["La Grande Rue", "Clos de Tart", "Clos de la Roche"] },
+                    { q: "What is the minimum potential alcohol for a village-level Vosne-Romanée?", a: "10.5%", o: ["11.0%", "11.5%", "10.0%"] },
+                    { q: "Which body represents the interests of both growers and négociants?", a: "BIVB", o: ["INAO", "UNESCO", "SAFER"] },
+                    { q: "The AOC system legally enforces a 'less is more' philosophy by mandating what?", a: "High-density planting and non-irrigation", o: ["Low alcohol levels", "The use of only old vines", "Minimal use of new oak"] },
+                    { q: "How many Grand Cru appellations are there in the Côte de Nuits?", a: "24", o: ["33", "9", "12"] },
+                    { q: "What is the primary legal distinction between a climat and a lieu-dit?", a: "A climat is legally recognized for quality (1er/Grand Cru), while a lieu-dit is a cadastral name.", o: ["A climat must be walled, a lieu-dit is not.", "A climat is always a monopole.", "There is no legal distinction."] },
+                    { q: "Which village AOP includes vineyards in the commune of Brochon?", a: "Gevrey-Chambertin", o: ["Morey-Saint-Denis", "Fixin", "Marsannay"] },
+                    { q: "Which is the only Premier Cru in the entire Côte d'Or located east of the D974 highway?", a: "Clos des Grandes Vignes", o: ["Clos de la Maréchale", "Les Amoureuses", "Clos Saint-Jacques"] },
+                    { q: "What is the minimum aging requirement before a red Premier Cru can be released?", a: "It may not be released until June 15 of the year following the harvest.", o: ["12 months in oak", "24 months total", "There is no minimum aging requirement."] },
+                    { q: "Which Grand Cru is a monopole of Domaine François Lamarche?", a: "La Grande Rue", o: ["La Tâche", "La Romanée", "Clos de Tart"] },
+                    { q: "The addition of acid to must, known as acidification, is what in Burgundy?", a: "Legal and declared", o: ["Illegal", "Only for white wines", "Only in very hot years"] },
+                    { q: "In the appellation hierarchy, what percentage of Burgundy's production do Grand Crus account for?", a: "Just over 1%", o: ["Around 10%", "Roughly 25%", "About 50%"] },
+                    { q: "Which Grand Cru AOP has the largest area?", a: "Clos de Vougeot", o: ["Echézeaux", "Charmes-Chambertin", "Corton"] },
+                    { q: "Which village AOP includes vineyards in the commune of Premeaux-Prissey?", a: "Nuits-Saint-Georges", o: ["Vosne-Romanée", "Vougeot", "Chambolle-Musigny"] },
+                    { q: "What was the primary motivation for villages like Gevrey to append the name of their most famous vineyard?", a: "To increase the prestige and market recognition of the village's wines.", o: ["A legal requirement from the INAO.", "To simplify the labeling laws.", "To honor the original monastic owners."] }
+                ]
+            },
+            gastronome: {
+                title: "The Gastronome's Table",
+                instructions: "Answer 10 multiple-choice questions about the cuisine, ingredients, and classic pairings of the Côte de Nuits. After a correct answer, you may have the option to generate an AI explanation.",
+                questions: [
+                    { q: "Which iconic Burgundian dish is a slow-cooked beef stew braised in red Burgundy wine?", a: "Bœuf Bourguignon", o: ["Coq au Vin", "Pot-au-Feu", "Cassoulet"], subjectType: 'dish', subjectName: 'Bœuf Bourguignon' },
+                    { q: "Which famous pungent, soft cow's milk cheese has its rind washed with Marc de Bourgogne?", a: "Époisses", o: ["Comté", "Roquefort", "Camembert"], subjectType: 'ingredient', subjectName: 'Époisses' },
+                    { q: "The classic local aperitif, the Kir, is made by mixing Bourgogne Aligoté with what?", a: "Crème de Cassis de Dijon", o: ["Chartreuse", "Grand Marnier", "Pastis"], subjectType: 'beverage', subjectName: 'Kir' },
+                    { q: "Which is the only chicken in the world to hold PDO status, often used in Coq au Vin?", a: "Volaille de Bresse", o: ["Poulet de Challans", "Coucou de Rennes", "Poularde du Mans"], subjectType: 'ingredient', subjectName: 'Volaille de Bresse' },
+                    { q: "What is Marc de Bourgogne?", a: "A grape pomace brandy aged in oak barrels", o: ["A type of red wine vinegar", "A sweet grape juice reduction", "A fortified wine"], subjectType: 'beverage', subjectName: 'Marc de Bourgogne' },
+                    { q: "A powerful, structured Gevrey-Chambertin is the classic pairing for which dish?", a: "Bœuf Bourguignon", o: ["Poached sole", "Oysters on the half shell", "Goat cheese salad"], subjectType: 'wine_pairing', subjectName: 'Gevrey-Chambertin and Bœuf Bourguignon' },
+                    { q: "Which dish consists of eggs poached in a rich red wine sauce with lardons and mushrooms?", a: "Œufs en Meurette", o: ["Quiche Lorraine", "Omelette Arnold Bennett", "Soufflé au Fromage"], subjectType: 'dish', subjectName: 'Œufs en Meurette' },
+                    { q: "Moutarde de Bourgogne (PGI) is unique because it is made with Bourgogne PDO white wine instead of what?", a: "Vinegar", o: ["Water", "Lemon juice", "Verjus"], subjectType: 'ingredient', subjectName: 'Moutarde de Bourgogne' },
+                    { q: "What is Jambon Persillé?", a: "A terrine of cooked ham set in a parsley-flecked aspic", o: ["A type of air-dried ham", "A smoked pork sausage", "A ham and cheese pastry"], subjectType: 'dish', subjectName: 'Jambon Persillé' },
+                    { q: "The Burgundy snail, a celebrated delicacy, is botanically known as what?", a: "Helix pomatia", o: ["Helix aspersa", "Cepaea nemoralis", "Achatina fulica"], subjectType: 'ingredient', subjectName: 'Escargots de Bourgogne' },
+                    { q: "The cuisine of Burgundy is often described as a 'cuisine of...' what?", a: "Wine", o: ["Butter", "Mustard", "Cream"], subjectType: 'gastronomy', subjectName: 'Burgundian Cuisine' },
+                    { q: "Which local cattle breed is traditionally used for Bœuf Bourguignon?", a: "Charolais", o: ["Limousin", "Salers", "Aubrac"], subjectType: 'ingredient', subjectName: 'Charolais Beef' },
+                    { q: "Crème de Cassis de Dijon (PGI) was invented in which city in 1841?", a: "Dijon", o: ["Beaune", "Nuits-Saint-Georges", "Paris"], subjectType: 'beverage', subjectName: 'Crème de Cassis de Dijon' },
+                    { q: "Which PDO goat's milk cheese is from Burgundy?", a: "Charolais", o: ["Crottin de Chavignol", "Valençay", "Sainte-Maure de Touraine"], subjectType: 'ingredient', subjectName: 'Charolais Cheese' },
+                    { q: "What is the solid residue of grape skins, pips, and stems left after pressing called?", a: "Marc", o: ["Lees", "Must", "Pomace"], subjectType: 'ingredient', subjectName: 'Marc' },
+                    { q: "An elegant, silky Chambolle-Musigny would be a classic pairing for what type of dish?", a: "Roasted feathered game like quail or pheasant", o: ["Spicy curry", "Grilled steak", "Smoked salmon"], subjectType: 'wine_pairing', subjectName: 'Chambolle-Musigny and Game Birds' },
+                    { q: "What is the defining characteristic of the PGI for Crème de Cassis de Dijon?", a: "It must be produced within the city limits of Dijon.", o: ["It must use blackcurrants from anywhere in France.", "It must be aged for at least 2 years.", "It must have an alcohol content above 25%."], subjectType: 'law', subjectName: 'Crème de Cassis de Dijon' },
+                    { q: "The powerful structure of a Nuits-Saint-Georges makes it a good match for what kind of cheese?", a: "Strong, washed-rind cheeses like Époisses", o: ["Mild, fresh goat cheese", "Creamy blue cheese like Roquefort", "Hard, aged cheeses like Parmesan"], subjectType: 'wine_pairing', subjectName: 'Nuits-Saint-Georges and Époisses' },
+                    { q: "What is the typical preparation for Escargots de Bourgogne?", a: "Baked in their shells with garlic and parsley butter", o: ["Fried in batter", "Served raw with lemon", "Stewed in a tomato sauce"], subjectType: 'dish', subjectName: 'Escargots de Bourgogne' },
+                    { q: "Which PDO cheese is named after a town in the Côte d'Or?", a: "Époisses", o: ["Soumaintrain", "Brillat-Savarin", "Chaource"], subjectType: 'ingredient', subjectName: 'Époisses' },
+                    { q: "What is the primary flavor profile of Crème de Cassis?", a: "Blackcurrant", o: ["Raspberry", "Cherry", "Orange"], subjectType: 'beverage', subjectName: 'Crème de Cassis' },
+                    { q: "Marc de Bourgogne is typically served as what?", a: "A digestif", o: ["An aperitif", "A cocktail mixer", "A cooking spirit"], subjectType: 'beverage', subjectName: 'Marc de Bourgogne' },
+                    { q: "The use of rooster blood was a traditional method for thickening the sauce of which dish?", a: "Coq au Vin", o: ["Bœuf Bourguignon", "Lapin à la Moutarde", "Potée Bourguignonne"], subjectType: 'dish', subjectName: 'Coq au Vin' },
+                    { q: "A wine from which village would be a classic choice for making an authentic Bœuf Bourguignon?", a: "Gevrey-Chambertin", o: ["Sancerre", "Chablis", "Sauternes"], subjectType: 'wine_pairing', subjectName: 'Wine for Bœuf Bourguignon' },
+                    { q: "Which of these is NOT a PDO cheese from Burgundy?", a: "Comté", o: ["Époisses", "Charolais", "Soumaintrain"], subjectType: 'ingredient', subjectName: 'Burgundian Cheeses' },
+                    { q: "The prevalence of PDO and PGI food products in Burgundy reflects a cultural belief in what?", a: "The value of geographical origin (terroir)", o: ["The superiority of industrial agriculture", "The importance of modern food technology", "The need for standardized recipes"], subjectType: 'gastronomy', subjectName: 'Burgundian Terroir' },
+                    { q: "What is the primary difference between the PGI for 'Crème de Cassis de Dijon' and 'Crème de Cassis de Bourgogne'?", a: "The former must be made in Dijon, the latter must use Burgundian blackcurrants.", o: ["There is no difference.", "One is sweet, the other is dry.", "One is alcoholic, the other is not."], subjectType: 'law', subjectName: 'Crème de Cassis' },
+                    { q: "What is the typical base wine for Jambon Persillé?", a: "Bourgogne Aligoté", o: ["Bourgogne Rouge", "Beaujolais", "Crémant de Bourgogne"], subjectType: 'dish', subjectName: 'Jambon Persillé' },
+                    { q: "The rich, savory character of Burgundian cuisine is designed to complement which grape?", a: "Pinot Noir", o: ["Chardonnay", "Gamay", "Aligoté"], subjectType: 'gastronomy', subjectName: 'Burgundian Cuisine' },
+                    { q: "What is the role of wine in a sauce meurette?", a: "It provides the acidic and flavorful base of the sauce.", o: ["It is used only for deglazing the pan.", "It is added at the end for aroma.", "It is a minor ingredient for color."], subjectType: 'dish', subjectName: 'Œufs en Meurette' },
+                    { q: "Which of these is a key ingredient in the stuffing for Escargots de Bourgogne?", a: "Garlic", o: ["Cheese", "Breadcrumbs", "Tomato"], subjectType: 'ingredient', subjectName: 'Escargots de Bourgogne' },
+                    { q: "The practice of washing the rind of Époisses with Marc de Bourgogne contributes to its what?", a: "Pungent aroma and complex flavor", o: ["Hard texture", "Blue veining", "Mild taste"], subjectType: 'ingredient', subjectName: 'Époisses' },
+                    { q: "What does the term 'persillé' in Jambon Persillé refer to?", a: "The parsley flecked throughout the aspic", o: ["The marbled fat in the ham", "The peppery flavor", "The village of Persil"], subjectType: 'dish', subjectName: 'Jambon Persillé' },
+                    { q: "A rustic, earthy Nuits-Saint-Georges would pair well with what?", a: "Game meats and savory stews", o: ["Delicate shellfish", "Light salads", "Sweet desserts"], subjectType: 'wine_pairing', subjectName: 'Nuits-Saint-Georges Pairings' },
+                    { q: "Which of these is another name for a Kir made with Crémant de Bourgogne instead of Aligoté?", a: "Kir Royal", o: ["Kir Impérial", "Kir Breton", "Kir Pêche"], subjectType: 'beverage', subjectName: 'Kir Royal' },
+                    { q: "The long, slow cooking time for Bœuf Bourguignon serves what purpose?", a: "To tenderize tough cuts of beef and meld flavors", o: ["To cook the dish quickly", "To preserve the raw flavor of the meat", "To reduce the alcohol content"], subjectType: 'dish', subjectName: 'Bœuf Bourguignon' },
+                    { q: "What is the texture of a classic Époisses cheese?", a: "Soft and creamy", o: ["Hard and crumbly", "Semi-soft and rubbery", "Firm and waxy"], subjectType: 'ingredient', subjectName: 'Époisses' },
+                    { q: "Which ingredient provides a smoky, savory element to both Coq au Vin and Œufs en Meurette?", a: "Lardons (bacon)", o: ["Smoked paprika", "Chorizo", "Anchovies"], subjectType: 'ingredient', subjectName: 'Lardons' },
+                    { q: "The high quality of Volaille de Bresse is attributed to what?", a: "Strict free-range raising conditions and specific breed", o: ["A diet of only corn", "Being raised indoors", "Rapid growth hormones"], subjectType: 'ingredient', subjectName: 'Volaille de Bresse' },
+                    { q: "What is the typical aging requirement for Marc de Bourgogne?", a: "It is aged in oak barrels for many years.", o: ["It is bottled immediately after distillation.", "It is aged in stainless steel tanks.", "It is aged for a maximum of one year."], subjectType: 'beverage', subjectName: 'Marc de Bourgogne' },
+                    { q: "The pairing of a rich wine with a rich dish like Bœuf Bourguignon is an example of what kind of pairing?", a: "Complementary (or congruent) pairing", o: ["Contrasting pairing", "Destructive pairing", "No specific principle"], subjectType: 'wine_pairing', subjectName: 'Pairing Principles' },
+                    { q: "Which of these is NOT a traditional Burgundian dish?", a: "Bouillabaisse", o: ["Coq au Vin", "Jambon Persillé", "Œufs en Meurette"], subjectType: 'dish', subjectName: 'Burgundian Dishes' },
+                    { q: "What does the 'de Bourgogne' in Moutarde de Bourgogne signify?", a: "The mustard seeds were grown and the mustard was made in Burgundy.", o: ["It is simply a style of mustard.", "The recipe originated in Burgundy.", "It is made with red Burgundy wine."], subjectType: 'law', subjectName: 'Moutarde de Bourgogne' },
+                    { q: "What is the primary textural element that a powerful Côte de Nuits red brings to a food pairing?", a: "Tannin", o: ["High acidity", "Sweetness", "Effervescence"], subjectType: 'wine_pairing', subjectName: 'Wine Texture' },
+                    { q: "Which of these is a soft cow's milk PDO cheese from Burgundy, besides Époisses?", a: "Soumaintrain", o: ["Morbier", "Saint-Nectaire", "Livarot"], subjectType: 'ingredient', subjectName: 'Soumaintrain Cheese' },
+                    { q: "The tradition of using wine extensively in cooking is a result of what historical factor?", a: "The historical abundance and cultural importance of wine in the region", o: ["A lack of other cooking liquids like stock or water", "A royal decree mandating its use", "The need to preserve meat before refrigeration"], subjectType: 'gastronomy', subjectName: 'Burgundian Cuisine' },
+                    { q: "What is the ideal type of red Burgundy to use for cooking Coq au Vin?", a: "A young, sturdy, generic Bourgogne Rouge", o: ["An aged Grand Cru", "A light-bodied rosé", "A sweet fortified wine"], subjectType: 'dish', subjectName: 'Coq au Vin' },
+                    { q: "The flavor profile of a mature Côte de Nuits, with notes of underbrush and game, naturally complements what?", a: "Earthy ingredients like mushrooms and game meats", o: ["Tropical fruits", "Spicy chili peppers", "Delicate white fish"], subjectType: 'wine_pairing', subjectName: 'Mature Burgundy Pairings' },
+                    { q: "The PGI for Crème de Cassis de Dijon ensures a minimum content of what?", a: "Blackcurrants", o: ["Sugar", "Alcohol", "Artificial flavors"], subjectType: 'law', subjectName: 'Crème de Cassis' },
+                    { q: "Which of these is the most iconic food and wine pairing from the Côte de Nuits?", a: "Bœuf Bourguignon with Gevrey-Chambertin", o: ["Oysters with Chablis", "Foie Gras with Sauternes", "Cassoulet with Madiran"], subjectType: 'wine_pairing', subjectName: 'Iconic Pairings' }
+                ]
+            },
+            critic: {
+                title: "The Critic's Corner",
+                instructions: "Answer 10 multiple-choice questions about the vintages, producers, and market context of the Côte de Nuits. After a correct answer, you may have the option to generate an AI tasting note.",
+                questions: [
+                    { q: "Which producer is widely considered the pinnacle of Burgundy, owning monopoles of La Tâche and Romanée-Conti?", a: "Domaine de la Romanée-Conti", o: ["Domaine Leroy", "Domaine Armand Rousseau", "Domaine Dujac"], subjectType: 'producer', subjectName: 'Domaine de la Romanée-Conti' },
+                    { q: "Which vintage is considered an exceptional, benchmark year, producing powerful, structured wines for very long aging?", a: "2005", o: ["2004", "2007", "2013"], subjectType: 'vintage', subjectName: '2005 Burgundy Vintage' },
+                    { q: "Which producer, led by Lalou Bize-Leroy, is a beacon of biodynamic viticulture and known for incredibly low yields?", a: "Domaine Leroy", o: ["Domaine de la Romanée-Conti", "Domaine Leflaive", "Domaine Ponsot"], subjectType: 'producer', subjectName: 'Domaine Leroy' },
+                    { q: "How is the 2003 vintage generally characterized due to the extreme heatwave?", a: "Atypical, powerful, rich, and sometimes unbalanced", o: ["Classic, cool, and elegant", "Light, acidic, and for early drinking", "Perfectly balanced and structured"], subjectType: 'vintage', subjectName: '2003 Burgundy Vintage' },
+                    { q: "Which Gevrey-Chambertin based producer is a benchmark for classic, pure expressions of their terroirs, especially Chambertin?", a: "Domaine Armand Rousseau", o: ["Domaine Claude Dugat", "Domaine Fourrier", "Domaine Denis Mortet"], subjectType: 'producer', subjectName: 'Domaine Armand Rousseau' },
+                    { q: "Which vintage is hailed as a benchmark classic year, producing well-balanced, complex wines built for long cellaring?", a: "2010", o: ["2009", "2011", "2006"], subjectType: 'vintage', subjectName: '2010 Burgundy Vintage' },
+                    { q: "Which Chambolle-Musigny producer is renowned for its elegant, ethereal wines, including a legendary Musigny?", a: "Domaine Georges Roumier", o: ["Domaine Comte Georges de Vogüé", "Domaine Ghislaine Barthod", "Domaine J-F Mugnier"], subjectType: 'producer', subjectName: 'Domaine Georges Roumier' },
+                    { q: "How are the wines of the 2009 vintage generally described?", a: "Excellent, rich, ripe, and powerful, more opulent than 2010", o: ["Light and acidic", "Elegant and structured", "Atypical and unbalanced"], subjectType: 'vintage', subjectName: '2009 Burgundy Vintage' },
+                    { q: "Which Morey-Saint-Denis based producer is known for its extensive use of whole-cluster fermentation?", a: "Domaine Dujac", o: ["Domaine Ponsot", "Domaine Hubert Lignier", "Clos de Tart"], subjectType: 'producer', subjectName: 'Domaine Dujac' },
+                    { q: "Which Nuits-Saint-Georges producer is famous for its powerful, structured wines and its unique white wine from Pinot Gouges?", a: "Domaine Henri Gouges", o: ["Domaine Robert Chevillon", "Domaine de l'Arlot", "Domaine Thibault Liger-Belair"], subjectType: 'producer', subjectName: 'Domaine Henri Gouges' },
+                    { q: "The 2015 vintage is considered what in the Côte de Nuits?", a: "Exceptional; a benchmark vintage for rich, ripe, powerful wines", o: ["A light and fruity vintage for early drinking", "A cool, classic, and elegant vintage", "A difficult, rain-affected vintage"], subjectType: 'vintage', subjectName: '2015 Burgundy Vintage' },
+                    { q: "Which critic is the most specialized and influential for Burgundy, publishing the 'Burghound' newsletter?", a: "Allen Meadows", o: ["Neal Martin", "Jancis Robinson", "Robert Parker"], subjectType: 'critic', subjectName: 'Allen Meadows' },
+                    { q: "Which vintage was marked by severe frost and very low yields, but produced excellent, concentrated wines where grapes survived?", a: "2016", o: ["2017", "2015", "2018"], subjectType: 'vintage', subjectName: '2016 Burgundy Vintage' },
+                    { q: "Domaine du Comte Liger-Belair is the monopole owner of which Grand Cru?", a: "La Romanée", o: ["La Tâche", "La Grande Rue", "Romanée-Conti"], subjectType: 'producer', subjectName: 'Domaine du Comte Liger-Belair' },
+                    { q: "How is the 2018 vintage generally characterized?", a: "Warm and sunny, producing rich, opulent, and concentrated wines", o: ["Cool and elegant with high acidity", "A large crop of fruity, accessible wines", "A difficult, low-quality vintage"], subjectType: 'vintage', subjectName: '2018 Burgundy Vintage' },
+                    { q: "Which producer is the monopole owner of the Grand Cru Clos de Tart?", a: "Artémis Group (François Pinault)", o: ["Domaine Ponsot", "Domaine Dujac", "LVMH"], subjectType: 'producer', subjectName: 'Clos de Tart' },
+                    { q: "Which vintage was very early, warm, and dry, producing powerful yet well-balanced wines with great aging potential?", a: "2020", o: ["2017", "2013", "2011"], subjectType: 'vintage', subjectName: '2020 Burgundy Vintage' },
+                    { q: "Which of these is a consensus top-tier producer in Chambolle-Musigny?", a: "Domaine J-F Mugnier", o: ["Domaine Fourrier", "Domaine Denis Mortet", "Domaine Robert Chevillon"], subjectType: 'producer', subjectName: 'Domaine J-F Mugnier' },
+                    { q: "How is the 2014 vintage described?", a: "Elegant, pure, and well-balanced with good aging potential", o: ["Hot, ripe, and powerful", "Light, acidic, and for early drinking", "Rich and opulent"], subjectType: 'vintage', subjectName: '2014 Burgundy Vintage' },
+                    { q: "Which producer is the monopole owner of Clos de la Maréchale in Nuits-Saint-Georges?", a: "Domaine J-F Mugnier", o: ["Domaine de l'Arlot", "Domaine Henri Gouges", "Domaine Faiveley"], subjectType: 'producer', subjectName: 'Domaine J-F Mugnier' },
+                    { q: "Which vintage was notoriously difficult, cold, and wet, resulting in light, acidic wines for early drinking?", a: "2013", o: ["2012", "2014", "2015"], subjectType: 'vintage', subjectName: '2013 Burgundy Vintage' },
+                    { q: "Domaine Fourrier is a benchmark producer in which village?", a: "Gevrey-Chambertin", o: ["Chambolle-Musigny", "Vosne-Romanée", "Morey-Saint-Denis"], subjectType: 'producer', subjectName: 'Domaine Fourrier' },
+                    { q: "The market for top Côte de Nuits wines is primarily driven by intense global demand and what other factor?", a: "Extreme scarcity", o: ["Low prices", "High production volumes", "Government subsidies"], subjectType: 'market', subjectName: 'Burgundy Market' },
+                    { q: "How is the 2017 vintage generally described for red wines?", a: "Fruity, charming, and accessible when young", o: ["Powerful, structured, and for long aging", "Light and acidic", "Rich and opulent"], subjectType: 'vintage', subjectName: '2017 Burgundy Vintage' },
+                    { q: "Which producer is known for its powerful, often 100% destemmed wines from Gevrey-Chambertin?", a: "Domaine Claude Dugat", o: ["Domaine Dujac", "Domaine Leroy", "Domaine de la Romanée-Conti"], subjectType: 'producer', subjectName: 'Domaine Claude Dugat' },
+                    { q: "Which vintage is known for being a hot and dry year with low yields, producing excellent, complex wines?", a: "2019", o: ["2016", "2014", "2011"], subjectType: 'vintage', subjectName: '2019 Burgundy Vintage' },
+                    { q: "Domaine Ponsot is a historic and top-tier producer in which village?", a: "Morey-Saint-Denis", o: ["Gevrey-Chambertin", "Vosne-Romanée", "Chambolle-Musigny"], subjectType: 'producer', subjectName: 'Domaine Ponsot' },
+                    { q: "Which vintage was a difficult season with low yields, but resulted in elegant, concentrated, and well-balanced wines?", a: "2012", o: ["2011", "2013", "2007"], subjectType: 'vintage', subjectName: '2012 Burgundy Vintage' },
+                    { q: "Which producer owns the largest single parcels in both Richebourg and Romanée-Saint-Vivant?", a: "Domaine de la Romanée-Conti", o: ["Domaine Leroy", "Domaine Méo-Camuzet", "Domaine Liger-Belair"], subjectType: 'producer', subjectName: 'Domaine de la Romanée-Conti' },
+                    { q: "How are the red wines of the 2008 vintage described?", a: "Elegant and well-structured with good aging potential; a 'classic' vintage", o: ["Rich, ripe, and powerful", "Light and for early drinking", "Atypical due to heat"], subjectType: 'vintage', subjectName: '2008 Burgundy Vintage' },
+                    { q: "Which producer is the monopole owner of Clos des Lambrays?", a: "LVMH (Domaine des Lambrays)", o: ["Artémis Group", "Domaine Ponsot", "Domaine Dujac"], subjectType: 'producer', subjectName: 'Clos des Lambrays' },
+                    { q: "Which vintage is considered another exceptional, classic year, similar in quality to 2005?", a: "2002", o: ["2003", "2004", "2006"], subjectType: 'vintage', subjectName: '2002 Burgundy Vintage' },
+                    { q: "Which Vosne-Romanée producer is known for a pure, elegant style and owns the monopole Clos des Réas?", a: "Domaine Michel Gros", o: ["Domaine Sylvain Cathiard", "Domaine Jean Grivot", "Domaine Mugneret-Gibourg"], subjectType: 'producer', subjectName: 'Domaine Michel Gros' },
+                    { q: "The 2005 vintage served as a catalyst for what major market shift?", a: "An exponential inflation in prices, turning top wines into investment assets", o: ["A significant decrease in global demand", "A shift towards négociant-bottled wines", "A focus on early-drinking styles"], subjectType: 'market', subjectName: 'Burgundy Market' },
+                    { q: "Which of these is a top-tier producer in Nuits-Saint-Georges?", a: "Domaine Robert Chevillon", o: ["Domaine Georges Roumier", "Domaine Fourrier", "Domaine Dujac"], subjectType: 'producer', subjectName: 'Domaine Robert Chevillon' },
+                    { q: "Which vintage produced elegant and delicate wines, but some showed under-ripe notes due to a large crop?", a: "2004", o: ["2005", "2003", "2002"], subjectType: 'vintage', subjectName: '2004 Burgundy Vintage' },
+                    { q: "Domaine Comte Georges de Vogüé is the largest and most famous owner of which Grand Cru?", a: "Musigny", o: ["Bonnes-Mares", "Chambertin", "Clos de Vougeot"], subjectType: 'producer', subjectName: 'Domaine Comte Georges de Vogüé' },
+                    { q: "Which of these is NOT a monopole Grand Cru?", a: "Richebourg", o: ["La Tâche", "Romanée-Conti", "Clos de Tart"], subjectType: 'place', subjectName: 'Richebourg' },
+                    { q: "The wines of which legendary producer regularly achieve record-breaking prices at auction?", a: "Henri Jayer", o: ["Joseph Drouhin", "Louis Jadot", "Bouchard Père & Fils"], subjectType: 'producer', subjectName: 'Henri Jayer' },
+                    { q: "How are the red wines of the 2006 vintage described?", a: "Classic, fruity, and well-balanced for medium-term drinking", o: ["Powerful and built for long aging", "Light and acidic", "Atypical and overripe"], subjectType: 'vintage', subjectName: '2006 Burgundy Vintage' },
+                    { q: "Which producer is known for a very pure style and owns a significant portion of Clos Saint-Jacques?", a: "Domaine Fourrier", o: ["Domaine Claude Dugat", "Domaine Ponsot", "Domaine Denis Mortet"], subjectType: 'producer', subjectName: 'Domaine Fourrier' },
+                    { q: "The 2011 vintage was challenging and produced what style of red wines?", a: "Lighter, fruit-forward, and for early drinking with uneven quality", o: ["Rich, powerful, and concentrated", "Classic, elegant, and structured", "A benchmark vintage for aging"], subjectType: 'vintage', subjectName: '2011 Burgundy Vintage' },
+                    { q: "Which family's holdings were divided in 2010, creating two separate top-tier domaines in Puligny-Montrachet?", a: "Carillon", o: ["Leflaive", "Ramonet", "Sauzet"], subjectType: 'producer', subjectName: 'Domaine Louis Carillon' },
+                    { q: "What is a 'micro-négociant'?", a: "A domaine vigneron who starts a small-scale négociant operation.", o: ["A large négociant that specializes in small parcels.", "A merchant who only sells wine locally.", "A grower who sells only to one négociant."], subjectType: 'market', subjectName: 'Micro-négociant' },
+                    { q: "Which producer is a top-tier estate in Vosne-Romanée known for its elegant and pure style?", a: "Domaine Sylvain Cathiard", o: ["Domaine Henri Gouges", "Domaine Ponsot", "Domaine Armand Rousseau"], subjectType: 'producer', subjectName: 'Domaine Sylvain Cathiard' },
+                    { q: "The 2007 vintage produced what style of red wines?", a: "Light and for early drinking; generally a lesser vintage", o: ["Powerful and structured", "A benchmark classic", "Rich and opulent"], subjectType: 'vintage', subjectName: '2007 Burgundy Vintage' },
+                    { q: "Which producer is the monopole owner of Clos de la Perrière in Fixin?", a: "Domaine Joliet", o: ["Domaine Pierre Gelin", "Domaine Berthaut", "Domaine Méo-Camuzet"], subjectType: 'producer', subjectName: 'Domaine Joliet' },
+                    { q: "What is the primary reason for the 'halo effect' that lifts prices across the entire region?", a: "The extreme prices and demand for a few top producers' wines", o: ["Excellent marketing by the BIVB", "A series of exceptional vintages", "A decrease in overall production"], subjectType: 'market', subjectName: 'Burgundy Market' },
+                    { q: "Which of these is a top-tier producer in Morey-Saint-Denis?", a: "Domaine Hubert Lignier", o: ["Domaine Robert Chevillon", "Domaine Ghislaine Barthod", "Domaine Denis Mortet"], subjectType: 'producer', subjectName: 'Domaine Hubert Lignier' },
+                    { q: "Which vintage produced wines that are fruity and well-balanced for medium-term drinking, lacking structure for long aging?", a: "2000", o: ["2002", "2005", "2010"], subjectType: 'vintage', subjectName: '2000 Burgundy Vintage' }
+                ]
+            }
+        };
+
+        const flashcardData = {
+            historian: [
+                { q: "When did viticulture begin in Burgundy?", a: "With Roman settlers as early as the 1st-3rd century AD." },
+                { q: "Who were the primary custodians of Burgundy's vineyards after the Roman Empire?", a: "The Roman Catholic Church, particularly the Benedictine and Cistercian monastic orders." },
+                { q: "Which monastic order is credited with systematically developing the concept of terroir?", a: "The Cistercians, founded at Cîteaux in 1098." },
+                { q: "What is a 'clos'?", a: "A walled vineyard, a practice started by monks to demarcate superior terroir." },
+                { q: "In what year did the Cistercians establish the Clos de Vougeot?", a: "1336." },
+                { q: "Who issued an edict in 1395 banning the Gamay grape from the Côte d'Or?", a: "Duke Philip the Bold." },
+                { q: "What grape did Philip the Bold mandate in place of Gamay?", a: "Pinot Noir." },
+                { q: "What major event led to the confiscation and auction of church and aristocracy lands?", a: "The French Revolution of 1789." },
+                { q: "What law, introduced in 1804, caused the extreme fragmentation of vineyard ownership?", a: "The Napoleonic Code of equal inheritance." },
+                { q: "The fragmentation of vineyards gave rise to what powerful economic system in Burgundy?", a: "The négociant (merchant) system." },
+                { q: "Who published the first systematic classification of Burgundy's terroirs in 1855?", a: "Dr. Jules Lavalle." },
+                { q: "What is the crucial difference between Lavalle's classification and Bordeaux's 1855 classification?", a: "Lavalle ranked the terroirs (the land), not the producers or estates." },
+                { q: "What is the INAO?", a: "The Institut National des Appellations d'Origine, the French governmental body created in 1935 to regulate wine appellations." },
+                { q: "In what years were the first Côte de Nuits AOCs legally established?", a: "1936 and 1937." },
+                { q: "What percentage of Côte d'Or wine was bottled by growers in the early 1970s?", a: "A remarkably low 15%." },
+                { q: "Who is considered the central figure of the modern quality revolution in Burgundy?", a: "Henri Jayer (1922-2006)." },
+                { q: "What was Henri Jayer's core philosophy?", a: "That great wine is made first and foremost in the vineyard, emphasizing low yields and meticulous viticulture." },
+                { q: "What winemaking technique did Henri Jayer pioneer to gently extract color and aromatics?", a: "Pre-fermentation cold maceration (cold soak)." },
+                { q: "Which Premier Cru vineyard, once abandoned, did Henri Jayer resurrect to legendary status?", a: "Cros Parantoux in Vosne-Romanée." },
+                { q: "What was the significance of the shift toward domaine-bottling?", a: "It transferred control over the final wine to the person farming the land, creating a direct link between viticulture and the bottle." },
+                { q: "What year were the Climats of Burgundy inscribed as a UNESCO World Heritage site?", a: "2015." },
+                { q: "Who was Gregory of Tours?", a: "A historian who, in 591 AD, wrote the earliest recorded praise for Burgundy's wines." },
+                { q: "The Benedictine Abbey of Cluny was founded in what year?", a: "910 AD." },
+                { q: "The Valois Dukes of Burgundy ruled during which centuries?", a: "The 14th and 15th centuries." },
+                { q: "What are 'biens nationaux'?", a: "The term for the national property (confiscated church/aristocracy lands) auctioned off during the French Revolution." },
+                { q: "What is 'primogeniture'?", a: "The system of inheritance where property passes to the firstborn son, which was ended by the Napoleonic Code." },
+                { q: "What does 'élevage' mean?", a: "The French term for the aging and maturation process of wine, traditionally done by négociants." },
+                { q: "What was the highest classification in Lavalle's 1855 hierarchy?", a: "Tête de cuvée." },
+                { q: "Who were among the first pioneers of domaine bottling in the 1920s and 1930s?", a: "Charles Rousseau and Henri Gouges." },
+                { q: "What was the Abbey of Bèze's connection to Gevrey-Chambertin?", a: "It was an early monastic owner of the land that would become Chambertin-Clos de Bèze, receiving it as a gift in 630 AD." },
+                { q: "What was the role of the Papacy in Avignon in Burgundy's history?", a: "It was a major court where Burgundian wines gained international prominence during the Ducal era." },
+                { q: "How many owners does the 51-hectare Clos de Vougeot have today?", a: "More than 80." },
+                { q: "What was the primary motivation for the creation of the INAO in 1935?", a: "To combat widespread fraud and protect the integrity of France's great wine names." },
+                { q: "What is the legacy of Henri Jayer's techniques?", a: "His methods (low yields, destemming, cold soak, no fining/filtration) are now commonplace among elite producers." },
+                { q: "When did the Romans first establish vineyards in Gaul?", a: "As early as the 3rd century AD, with evidence in Gevrey-Chambertin dating to the 1st century." },
+                { q: "What is the significance of the year 1131 in Vosne-Romanée?", a: "The Priory of Saint-Vivant de Vergy received land that would become the Romanée-Conti vineyard." },
+                { q: "What was the name of the Cistercian abbey founded in 1098 near Dijon?", a: "The Abbaye of Cîteaux." },
+                { q: "What was the original name of the Clos de Tart vineyard, documented in 1141?", a: "Clos de la Forge." },
+                { q: "What was the primary impact of the Burgundian Wars (1474-1477)?", a: "The death of Charles the Bold led to the Duchy of Burgundy reverting to the French crown." },
+                { q: "What is a 'négociant-éleveur'?", a: "A merchant who buys wine (often from the Hospices de Beaune auction) and then ages and bottles it." },
+                { q: "When did the first example of 'climat' labeling occur?", a: "In 1691, with a wine labeled 'Chambertin' arriving in Paris." },
+                { q: "What is 'provignage'?", a: "The old method of replanting by layering, where a vine cane is buried to sprout a new plant. It was rendered obsolete by the need for grafting post-phylloxera." },
+                { q: "When did phylloxera first strike the Côte d’Or?", a: "In 1878, at Meursault." },
+                { q: "Which Grand Cru was the last to be replanted on resistant rootstocks after phylloxera?", a: "Romanée-Conti, after the 1945 vintage." },
+                { q: "What is the Confrérie des Chevaliers du Tastevin?", a: "A Burgundian wine brotherhood founded in 1934 that promotes the region's wines." },
+                { q: "Which village appended 'Chambertin' to its name in 1847?", a: "Gevrey." },
+                { q: "Which village appended 'Romanée' to its name in 1866?", a: "Vosne." },
+                { q: "Which village appended 'Saint-Denis' to its name in 1927?", a: "Morey." },
+                { q: "What was the state of domaine bottling before the 1980s?", a: "It remained rare; the négociant model was still dominant." },
+                { q: "Who was the founder of 'La Revue du Vin de France' and a key persuader for domaine bottling?", a: "Raymond Baudoin." }
+            ],
+            terroir: [
+                { q: "What is the name of the limestone escarpment that forms the heart of Burgundy?", a: "The Côte d'Or." },
+                { q: "What is the general orientation of the slopes in the Côte de Nuits?", a: "East and Southeast." },
+                { q: "At what altitude are the Grand Cru vineyards typically found?", a: "Between 250 and 300 meters." },
+                { q: "What are 'combes'?", a: "Dry, transverse valleys that cut through the slope, creating alluvial fans." },
+                { q: "The bedrock of the Côte de Nuits is composed of alternating layers of limestone and what other rock type?", a: "Marl (a calcareous clay)." },
+                { q: "What is the French term for limestone?", a: "Calcaire." },
+                { q: "What is the French term for marl?", a: "Marne." },
+                { q: "The bedrock dates back to which geological period?", a: "The Jurassic Period (150-180 million years ago)." },
+                { q: "What is the primary viticultural benefit of limestone?", a: "Excellent drainage, forcing roots deep and contributing to finesse." },
+                { q: "What is the primary viticultural benefit of marl?", a: "Water retention, contributing to power and structure." },
+                { q: "What is the general soil classification in the Côte de Nuits?", a: "Clay-limestone (argilo-calcaire)." },
+                { q: "What type of soil is found on the highest slopes of the vineyards?", a: "Thin, stony soils called rendzinas." },
+                { q: "Where are the deepest, most clay-rich soils located?", a: "On the lower slopes, in the Village-level vineyards." },
+                { q: "What is the climate of the Côte de Nuits classified as?", a: "Semi-continental." },
+                { q: "What is the approximate annual rainfall in the region?", a: "729 mm." },
+                { q: "What is the approximate Growing Degree Day (GDD) total for the Côte de Nuits?", a: "Approximately 1325°C days (Winkler Region Ib)." },
+                { q: "What is the most significant climatic risk in the spring?", a: "Frost, especially with earlier budburst due to climate change." },
+                { q: "What other major climatic risk can devastate crops in the summer?", a: "Hailstorms." },
+                { q: "The Côte d'Or escarpment was formed by the collapse of which rift valley?", a: "The Bressan Rift Valley." },
+                { q: "What gives the mid-slope soils their characteristic reddish-brown color?", a: "A higher content of iron oxide." },
+                { q: "What is the name of the hard, pink-hued limestone found in the mid-slope?", a: "Premeaux limestone." },
+                { q: "What is the name of the creamy-white limestone quarried for marble?", a: "Comblanchien limestone." },
+                { q: "The Combe de Lavaux is a major feature near which village?", a: "Gevrey-Chambertin." },
+                { q: "What is the primary topographical difference between the upper and lower slopes?", a: "The upper slope is steeper with thinner soils; the lower slope is flatter with deeper soils." },
+                { q: "The Côte de Nuits stretches from Dijon to which southern village?", a: "Corgoloin." },
+                { q: "How does the eastern orientation benefit the vines?", a: "It maximizes exposure to gentle morning sun, promoting even ripening while preserving acidity." },
+                { q: "What is the French geological survey that maps the region?", a: "BRGM (Bureau de Recherches Géologiques et Minières)." },
+                { q: "What is Oolitic limestone?", a: "A more porous and fractured type of limestone found higher on the slope." },
+                { q: "The pedological gradient (soil distribution) directly corresponds to what?", a: "The established quality hierarchy of the appellations (Village, Premier Cru, Grand Cru)." },
+                { q: "Which ocean provides a moderating influence from the west?", a: "The Atlantic Ocean." },
+                { q: "Which sea provides a warming influence from the south?", a: "The Mediterranean Sea." },
+                { q: "What is the primary effect of the semi-continental climate on vintages?", a: "A high degree of vintage-to-vintage variation." },
+                { q: "Which month is typically the wettest in Burgundy?", a: "May." },
+                { q: "Why is rain during flowering a problem?", a: "It can disrupt fruit set, reducing the crop size." },
+                { q: "The soils of Bonnes-Mares are famously divided into two types. What are they?", a: "Clay-heavy 'terres rouges' (red earth) and limestone-heavy 'terres blanches' (white earth)." },
+                { q: "The soil in Romanée-Conti is a brown limestone with a high content of what two elements?", a: "Iron and clay." },
+                { q: "How deep is the topsoil in Romanée-Conti?", a: "Approximately 60cm." },
+                { q: "How does the soil of La Romanée differ from Romanée-Conti?", a: "It is less clayey and on a steeper slope." },
+                { q: "The soil of Clos de Vougeot is highly varied. How does it change from top to bottom?", a: "It is shallow and gravelly at the top, becoming deeper with more clay and alluvium at the bottom." },
+                { q: "The soils of Musigny are described as 'active limestone'. What does this imply?", a: "High calcium carbonate content, contributing to the wine's finesse and mineral character." },
+                { q: "What is the dominant soil type in the Grand Cru Clos de la Roche?", a: "Thin, stony topsoil over hard limestone bedrock." },
+                { q: "What is the latitude of the Côte de Nuits?", a: "Near the 47th parallel north." },
+                { q: "What is the primary geological difference between the Côte de Nuits and Côte de Beaune?", a: "The Côte de Nuits has more limestone-bearing strata pushed up, while the Côte de Beaune has more marl." },
+                { q: "What is colluvium?", a: "The mix of soil from the immediately underlying bedrock and material slipped from higher up the slope, typical of Grand Cru sites." },
+                { q: "What is alluvium?", a: "River-borne deposits found on the lower slopes and plains." },
+                { q: "How do the soils' clays (like montmorillonite) help the vines?", a: "They provide essential mineral nutrients in just sufficient quantities, naturally limiting vine vigor." },
+                { q: "What is the soil composition of Latricières-Chambertin?", a: "Cool, stony, and shallow soils, producing mineral-driven wines." },
+                { q: "What is the soil composition of Charmes-Chambertin?", a: "Deeper clay-limestone soils, often producing rounder, more generous wines." },
+                { q: "What is the primary soil characteristic of Ruchottes-Chambertin?", a: "Shallow, rocky, limestone soils at a high altitude." },
+                { q: "The geology of the Côte de Nuits is a result of what type of fault?", a: "A north-south zone of interweaving breaks known as the Saône fault." }
+            ],
+            ampelographer: [
+                { q: "What is the principal red grape variety of the Côte de Nuits?", a: "Pinot Noir." },
+                { q: "What is the principal white grape variety?", a: "Chardonnay." },
+                { q: "What is the term for a population of vines propagated from a single 'mother vine'?", a: "A clone." },
+                { q: "What is the most widely planted 'Dijon clone' of Pinot Noir, known for being 'complete'?", a: "Clone 115." },
+                { q: "Which Dijon clone of Pinot Noir is known for its very dark color and high tannin?", a: "Clone 777." },
+                { q: "What is 'sélection massale'?", a: "Propagating new vines from cuttings of numerous superior, older vines within a vineyard." },
+                { q: "What is the minimum planting density in the Côte de Nuits?", a: "9,000 vines per hectare." },
+                { q: "What is the most common pruning system?", a: "Guyot simple." },
+                { q: "Which disease is caused by the phytoplasma bacteria spread by leafhoppers?", a: "Flavescence dorée." },
+                { q: "What is 'coulure'?", a: "A viticultural hazard, also known as 'shatter', where flowers fail to develop into berries." },
+                { q: "What is 'millerandage'?", a: "A viticultural hazard resulting in a mix of large and small, seedless berries in a cluster ('hens and chicks')." },
+                { q: "Which Pinot Noir clone is known for its fine, floral, and elegant aromatic profile?", a: "Clone 113." },
+                { q: "Which Pinot Noir clone provides structure with thick yet soft tannins?", a: "Clone 667." },
+                { q: "Which grape is a white-berried color mutation of Pinot Noir?", a: "Pinot Blanc." },
+                { q: "Which grape has berries that range from greyish-blue to pinkish-brown?", a: "Pinot Gris." },
+                { q: "What is Pinot Liébault?", a: "A clonal mutant of Pinot Noir known for higher yields, discovered in Gevrey-Chambertin." },
+                { q: "Which institution oversees the certification of grapevine clones in France?", a: "INRAE/ENTAV." },
+                { q: "Why do many producers plant several different clones in one vineyard?", a: "To achieve greater complexity, mimicking the diversity of sélection massale." },
+                { q: "What is the primary reason for high-density planting?", a: "To create competition between vines, forcing roots deep and limiting individual vine yield." },
+                { q: "What is the main viticultural challenge of Pinot Noir's thin skins?", a: "Susceptibility to fungal diseases like rot and mildew." },
+                { q: "Which Chardonnay clone is known as 'muscaté' for its aromatic profile?", a: "Clone 809." },
+                { q: "What is Eutypa dieback?", a: "A grapevine trunk disease that infects wood through pruning wounds, eventually killing the vine." },
+                { q: "What is the primary vector for grapevine fanleaf virus (court-noué)?", a: "Soil nematodes (Xiphinema index)." },
+                { q: "Which grape is known as Pinot Beurot in Burgundy?", a: "Pinot Gris." },
+                { q:- "Which type of Pinot Noir field selection is known for lower yields and more concentrated juice?", a: "Pinot Fin." },
+                { q: "Which type of Pinot Noir field selection is known for higher yields and an upright growth habit?", a: "Pinot Droit." },
+                { q: "What is the typical height of the fruiting cane in a Guyot-trained vineyard in the Côte d'Or?", a: "Low to the ground, typically no more than one-half meter." },
+                { q: "What is an 'enjambeur'?", a: "A high-clearance tractor that straddles the vine rows, necessary due to high-density planting." },
+                { q: "Which grape is a natural crossing of Pinot and Gouais Blanc?", a: "Chardonnay (and Aligoté, Gamay, etc.)." },
+                { q: "Which Premier Cru in Morey-Saint-Denis legally allows Aligoté?", a: "Monts Luisants." },
+                { q: "The 'Dijon clones' of Pinot Noir originated from cuttings taken in which Grand Cru?", a: "Clos de la Roche." },
+                { q: "What is the effect of Pinot Noir's tight bunches?", a: "They can encourage the spread of botrytis (grey mould)." },
+                { q: "What is the primary characteristic of Chardonnay that makes it more adaptable than Pinot Noir?", a: "It is relatively hardy and productive." },
+                { q: "Which of these is NOT a permitted accessory grape in red Gevrey-Chambertin?", a: "Aligoté." },
+                { q: "What is the primary reason for using cover crops?", a: "To minimize erosion and enrich biodiversity." },
+                { q: "What is a common organic treatment for mildew?", a: "Copper and sulfur-based sprays." },
+                { q: "What is the primary viticultural characteristic of Chardonnay Clone 76?", a: "Aromatic intensity and balance." },
+                { q: "What is the primary viticultural characteristic of Chardonnay Clone 96?", a: "More vigorous and productive, often used for sparkling wine." },
+                { q: "What is the primary challenge of Pinot Noir's early budding?", a: "Vulnerability to spring frosts." },
+                { q: "What is the term for the process of a vine's flower failing to fertilize?", a: "Coulure (shatter)." },
+                { q: "Which pest can impart a green, pyrazine-like off-flavor to wines?", a: "The Asian lady beetle (Harmonia axyridis)." },
+                { q: "What is the lowest yielding Dijon clone of Pinot Noir?", a: "Clone 943." },
+                { q: "What is the most common training system for Gamay in Beaujolais?", a: "Gobelet." },
+                { q: "What does the term 'vendange entière' refer to?", a: "Whole-cluster fermentation (fermenting with stems)." },
+                { q: "What is the primary reason for destemming grapes?", a: "To avoid harsh, green tannins and achieve purer fruit expression." },
+                { q: "What is the purpose of a green harvest?", a: "To reduce the crop load on the vine by removing unripe grape bunches, thereby concentrating flavor in the remaining fruit." },
+                { q: "What is the impact of a high potassium level in the soil, often from past fertilizer use?", a: "It can raise the pH of the wine, potentially reducing its stability and freshness." },
+                { q: "What is the name of the rootstock that was widely used in Chablis for its high lime tolerance?", a: "41B." },
+                { q: "Which rootstock gained popularity in the Côte d'Or in the 1950s but is now less favored due to excessive vigor?", a: "SO4." },
+                { q: "What is the primary challenge with Pinot Gris cultivation?", a: "It can accumulate high sugar levels quickly, leading to high alcohol wines if not harvested at the right time." }
+            ],
+            lawmaker: [
+                { q: "Which organization creates and regulates French AOCs?", a: "The INAO (Institut National de l'Origine et de la Qualité)." },
+                { q: "What is the BIVB?", a: "The Bureau Interprofessionnel des Vins de Bourgogne, the regional professional association." },
+                { q: "What is the highest level of the Burgundy appellation pyramid?", a: "Grand Cru." },
+                { q: "What is the legal document defining production rules for an AOC?", a: "The cahier des charges." },
+                { q: "What is the minimum planting density for Côte de Nuits Village AOPs?", a: "9,000 vines per hectare." },
+                { q: "Is irrigation permitted in the Côte de Nuits?", a: "No, it is strictly forbidden." },
+                { q: "What is a 'monopole'?", a: "A vineyard under the sole ownership of a single domaine." },
+                { q: "What is a 'climat'?", a: "A precisely delimited vineyard plot, recognized for its unique terroir." },
+                { q: "Which Grand Cru is a monopole of Domaine de la Romanée-Conti?", a: "La Tâche (and Romanée-Conti)." },
+                { q: "What is the smallest AOP in France?", a: "La Romanée." },
+                { q: "Which village's Grand Cru (Musigny) allows for white wine production?", a: "Chambolle-Musigny." },
+                { q: "When were the first Burgundy AOCs established?", a: "1936-1937." },
+                { q: "What is the maximum yield for a red Grand Cru like Chambertin?", a: "42 hl/ha." },
+                { q: "What is the term for adding sugar to must to increase alcohol?", a: "Chaptalization." },
+                { q: "Which Grand Cru is the largest in the Côte de Nuits?", a: "Clos de Vougeot." },
+                { q: "What does 'lieu-dit' mean?", a: "A named place, recognized on cadastral maps." },
+                { q: "Which village is the only one in the Côte de Nuits that can produce rosé under its Village AOC?", a: "Marsannay." },
+                { q: "Which Grand Cru was the last to be promoted, in 1992?", a: "La Grande Rue." },
+                { q: "Producers of Mazoyères-Chambertin can also label their wine as what?", a: "Charmes-Chambertin." },
+                { q: "Is it legal to both chaptalize and acidify the same wine?", a: "Technically no, but it occurs." },
+                { q: "How are Premier Crus legally defined?", a: "As a geographical designation within a Village AOC, not a separate AOC." },
+                { q: "Which Grand Cru is split between Morey-Saint-Denis and Chambolle-Musigny?", a: "Bonnes-Mares." },
+                { q: "What is the minimum potential alcohol for a red Gevrey-Chambertin Premier Cru?", a: "11%." },
+                { q: "What is the maximum percentage of accessory white grapes allowed in a co-planted red Vosne-Romanée vineyard?", a: "15%." },
+                { q: "What does the term 'vendange entière' mean?", a: "Whole-cluster (fermenting with stems)." },
+                { q: "What is the standard size of a Burgundian oak barrel, or 'pièce'?", a: "228 liters." },
+                { q: "Which Grand Cru is a monopole of Domaine François Lamarche?", a: "La Grande Rue." },
+                { q: "Which Grand Cru is a monopole of Domaine du Comte Liger-Belair?", a: "La Romanée." },
+                { q: "Which Grand Cru is a monopole of the Artémis Group (previously Mommessin family)?", a: "Clos de Tart." },
+                { q: "Which Grand Cru was promoted in 1981?", a: "Clos des Lambrays." },
+                { q: "Which two villages can produce wine under the Côte de Nuits-Villages AOP?", a: "Fixin, Brochon, Premeaux-Prissey, Corgoloin, and Comblanchien." },
+                { q: "What is the minimum must weight for a red Grand Cru?", a: "198 g/l." },
+                { q: "What is the maximum residual sugar for a red Grand Cru?", a: "2 g/l." },
+                { q: "When may a Grand Cru wine be released for sale?", a: "Not before June 30 of the year following the harvest." },
+                { q: "What is the legal status of wines from the commune of Flagey-Echézeaux?", a: "They are labeled under the Vosne-Romanée AOP." },
+                { q: "What is the maximum yield for a red Nuits-Saint-Georges Premier Cru?", a: "48 hl/ha." },
+                { q: "What is the only Premier Cru in the Côte d'Or located east of the D974 highway?", a: "Clos des Grandes Vignes in Premeaux-Prissey." },
+                { q: "Is manual harvesting legally required for all Grand Crus?", a: "It is legally mandatory for all monopole Grand Crus." },
+                { q: "The INAO's legal framework is based on the 1855 classification by whom?", a: "Dr. Jules Lavalle." },
+                { q: "What percentage of Burgundy's total production do Grand Crus represent?", a: "Just over 1%." },
+                { q: "What percentage of Burgundy's total production do Régionale appellations represent?", a: "Approximately 52%." },
+                { q: "Can a producer blend wine from Chambertin and Clos de Bèze and label it as Chambertin?", a: "Yes, Clos de Bèze may be labeled as Chambertin." },
+                { q: "Can a producer blend wine from two different Grand Crus (e.g., Chambertin and Richebourg)?", a: "No, the wine would have to be declassified to a lesser appellation." },
+                { q: "What is 'subtractive must enrichment'?", a: "A legal technique since 2009 to remove water from must to concentrate it." },
+                { q: "Which Grand Cru is NOT a monopole?", a: "Bonnes-Mares." },
+                { q: "What is the primary legal function of the BIVB?", a: "It is a professional association for promotion and support, not legal enforcement." },
+                { q: "The name of which geographical feature must appear on a Premier Cru label?", a: "The village name." },
+                { q: "Which of these is a 'lieu-dit' but not a Premier or Grand Cru?", a: "La Chapelle Notre Dame (a geographical designation of Bourgogne AOP)." },
+                { q: "What is the legal basis for the UNESCO World Heritage status of Burgundy?", a: "The unique cultural value of its 'Climats'." },
+                { q: "Which AOP was established in 1987?", a: "Marsannay." }
+            ],
+            gastronome: [
+                { q: "What is the most famous Burgundian dish, a slow-cooked beef stew?", a: "Bœuf Bourguignon." },
+                { q: "Which cheese's rind is washed with Marc de Bourgogne?", a: "Époisses (PDO)." },
+                { q: "What is a Kir?", a: "An aperitif made with Bourgogne Aligoté and Crème de Cassis de Dijon." },
+                { q: "Which poultry, the only one with PDO status, is used for Coq au Vin?", a: "Volaille de Bresse." },
+                { q: "What is Marc de Bourgogne?", a: "A brandy made from distilling grape pomace (marc)." },
+                { q: "A powerful Gevrey-Chambertin is a classic pairing for what dish?", a: "Bœuf Bourguignon." },
+                { q: "What are Œufs en Meurette?", a: "Eggs poached in a red wine sauce with lardons and mushrooms." },
+                { q: "What makes Moutarde de Bourgogne (PGI) unique?", a: "It is made with Bourgogne PDO white wine instead of vinegar." },
+                { q: "What is Jambon Persillé?", a: "A terrine of cooked ham in a parsley-flecked aspic." },
+                { q: "What is the scientific name for the Burgundy snail?", a: "Helix pomatia." },
+                { q: "Burgundian cuisine is often called a 'cuisine of...' what?", a: "Wine." },
+                { q: "Which local cattle breed is used for Bœuf Bourguignon?", a: "Charolais." },
+                { q: "In which city was Crème de Cassis invented?", a: "Dijon." },
+                { q: "Which of these is a Burgundian PDO goat's milk cheese?", a: "Charolais." },
+                { q: "What is 'marc'?", a: "The solid residue of grape skins, pips, and stems after pressing." },
+                { q: "An elegant Chambolle-Musigny is a classic pairing for what?", a: "Roasted feathered game, like pheasant or quail." },
+                { q: "What does the PGI for Crème de Cassis de Dijon guarantee?", a: "That it is produced within the city limits of Dijon." },
+                { q: "A structured Nuits-Saint-Georges is a great match for which cheese?", a: "Époisses." },
+                { q: "How are Escargots de Bourgogne typically prepared?", a: "Baked in their shells with garlic and parsley butter." },
+                { q:- "Which town is the namesake for a famous washed-rind cheese?", a: "Époisses." },
+                { q: "What is the primary flavor of Crème de Cassis?", a: "Blackcurrant." },
+                { q: "How is Marc de Bourgogne typically served?", a: "As a digestif, after a meal." },
+                { q: "What was traditionally used to thicken the sauce for Coq au Vin?", a: "Rooster blood." },
+                { q: "What is the ideal type of wine for cooking Bœuf Bourguignon?", a: "A young, robust red Burgundy." },
+                { q: "Which of these is NOT a Burgundian PDO cheese?", a: "Comté." },
+                { q: "The prevalence of PDO/PGI foods in Burgundy reflects a cultural belief in what?", a: "The importance of origin and terroir." },
+                { q: "What is the difference between Crème de Cassis de Dijon and de Bourgogne?", a: "The former must be made in Dijon; the latter must use Burgundian blackcurrants." },
+                { q: "What wine is traditionally used in the aspic for Jambon Persillé?", a: "Bourgogne Aligoté." },
+                { q: "The savory character of Burgundian cuisine is designed to complement which grape?", a: "Pinot Noir." },
+                { q: "What is a 'sauce meurette'?", a: "A rich sauce made from red Burgundy wine, bacon, onions, and mushrooms." },
+                { q: "What is a key ingredient in the butter for Escargots de Bourgogne?", a: "Parsley." },
+                { q: "What does the washing process contribute to Époisses cheese?", a: "Its powerful, pungent aroma and complex flavor." },
+                { q: "What does 'persillé' refer to in Jambon Persillé?", a: "The parsley flecked throughout the jelly." },
+                { q: "A rustic Nuits-Saint-Georges pairs well with what type of food?", a: "Game meats and hearty stews." },
+                { q: "A Kir made with Crémant de Bourgogne is called what?", a: "A Kir Royal." },
+                { q: "What is the purpose of slow-cooking Bœuf Bourguignon?", a: "To tenderize the beef and meld the deep flavors." },
+                { q: "What is the texture of Époisses?", a: "Soft, creamy, and spoonable when ripe." },
+                { q: "What provides the smoky, savory base for many Burgundian sauces?", a: "Lardons (diced bacon)." },
+                { q: "What is special about the raising of Volaille de Bresse?", a: "They are raised under strict free-range conditions." },
+                { q: "How is Marc de Bourgogne aged?", a: "In oak barrels for many years." },
+                { q: "Pairing a powerful wine with a powerful dish is what kind of pairing?", a: "A complementary or congruent pairing." },
+                { q: "Which of these is NOT a traditional Burgundian dish?", a: "Cassoulet." },
+                { q: "What does the 'de Bourgogne' in Moutarde de Bourgogne guarantee?", a: "The mustard seeds were grown in Burgundy and it was made with local white wine." },
+                { q: "What textural component in red Côte de Nuits wine is key for pairing with rich meats?", a: "Tannin." },
+                { q: "Which of these is a soft cow's milk PDO cheese from Burgundy?", a: "Soumaintrain." },
+                { q: "The extensive use of wine in Burgundian cooking is a result of what?", a: "Its historical abundance and cultural importance in the region." },
+                { q: "What is the ideal wine for making Coq au Vin?", a: "A young, generic Bourgogne Rouge." },
+                { q: "The earthy, 'sous-bois' notes of a mature Pinot Noir complement what ingredient?", a: "Mushrooms." },
+                { q: "What is the minimum blackcurrant content for Crème de Cassis de Dijon?", a: "The PGI specifies a high minimum fruit content, ensuring quality." },
+                { q: "Which is the most iconic food and wine pairing from the Côte de Nuits?", a: "Bœuf Bourguignon with a sturdy red like Gevrey-Chambertin." }
+            ],
+            critic: [
+                { q: "Which producer is considered the pinnacle of Burgundy, owning the Romanée-Conti monopole?", a: "Domaine de la Romanée-Conti." },
+                { q: "Which vintage is considered a benchmark for powerful, structured, long-aging red wines?", a: "2005." },
+                { q: "Which domaine, led by Lalou Bize-Leroy, is a leader in biodynamics with extremely low yields?", a: "Domaine Leroy." },
+                { q: "How is the 2003 vintage characterized due to the extreme heatwave?", a: "Atypical, powerful, and sometimes unbalanced." },
+                { q: "Which Gevrey-Chambertin domaine is a benchmark for classic, pure Pinot Noir?", a: "Domaine Armand Rousseau." },
+                { q: "Which vintage is hailed as a benchmark classic year, with balance and structure for aging?", a: "2010." },
+                { q: "Which Chambolle-Musigny domaine is famous for its ethereal Musigny?", a: "Domaine Georges Roumier." },
+                { q: "How are the wines of the 2009 vintage described?", a: "Rich, ripe, and powerful; more opulent than 2010." },
+                { q: "Which Morey-Saint-Denis domaine is known for its use of whole-cluster fermentation?", a: "Domaine Dujac." },
+                { q: "Which Nuits-Saint-Georges domaine is famous for its powerful reds and unique 'Pinot Gouges' white?", a: "Domaine Henri Gouges." },
+                { q: "How is the 2015 vintage regarded?", a: "Exceptional; a benchmark for rich, ripe, powerful wines." },
+                { q: "Who is the most specialized and influential critic of Burgundy, author of Burghound?", a: "Allen Meadows." },
+                { q: "Which vintage was marked by severe frost and low yields, but excellent concentration?", a: "2016." },
+                { q: "Which domaine owns the La Romanée monopole?", a: "Domaine du Comte Liger-Belair." },
+                { q: "How is the 2018 vintage characterized?", a: "Warm and sunny, producing rich, opulent, concentrated wines." },
+                { q: "Who is the current owner of the Clos de Tart monopole?", a: "The Artémis Group (François Pinault)." },
+                { q: "Which vintage was very early, warm, and dry, producing powerful yet balanced wines?", a: "2020." },
+                { q: "Which of these is a top-tier producer in Chambolle-Musigny?", a: "Domaine J-F Mugnier." },
+                { q: "How is the 2014 vintage described?", a: "Elegant, pure, and well-balanced." },
+                { q: "Which producer owns the Clos de la Maréchale monopole in Nuits-Saint-Georges?", a: "Domaine J-F Mugnier." },
+                { q: "Which vintage was cold, wet, and difficult, producing light, acidic wines?", a: "2013." },
+                { q: "Domaine Fourrier is a benchmark producer in which village?", a: "Gevrey-Chambertin." },
+                { q: "The market for top Burgundy is driven by intense demand and what other factor?", a: "Extreme scarcity." },
+                { q: "How are the 2017 red wines described?", a: "Fruity, charming, and accessible when young." },
+                { q: "Which producer is known for powerful, 100% destemmed Gevrey-Chambertin?", a: "Domaine Claude Dugat." },
+                { q: "Which vintage was hot and dry with low yields, producing excellent, complex wines?", a: "2019." },
+                { q: "Domaine Ponsot is a historic top-tier producer in which village?", a: "Morey-Saint-Denis." },
+                { q: "Which vintage had a difficult season but produced elegant, concentrated wines from low yields?", a: "2012." },
+                { q: "Which domaine owns the largest parcels in Richebourg and Romanée-Saint-Vivant?", a: "Domaine de la Romanée-Conti." },
+                { q: "How are the 2008 red wines described?", a: "Elegant and structured; a 'classic' high-acidity vintage." },
+                { q: "Who owns the Clos des Lambrays monopole?", a: "LVMH." },
+                { q: "Which vintage is considered another exceptional, classic year like 2005?", a: "2002." },
+                { q: "Which Vosne-Romanée domaine owns the Clos des Réas monopole?", a: "Domaine Michel Gros." },
+                { q: "The 2005 vintage acted as a catalyst for what market trend?", a: "Exponential price inflation, turning wines into investment assets." },
+                { q: "Which of these is a top-tier producer in Nuits-Saint-Georges?", a: "Domaine Robert Chevillon." },
+                { q: "Which vintage had a large crop and sometimes showed under-ripe notes?", a: "2004." },
+                { q: "Which domaine is the largest owner of Musigny?", a: "Domaine Comte Georges de Vogüé." },
+                { q: "Which of these Grand Crus is NOT a monopole?", a: "Richebourg." },
+                { q: "The wines of which late producer command legendary prices at auction?", a: "Henri Jayer." },
+                { q: "How are the 2006 red wines described?", a: "Classic, fruity, and balanced for medium-term drinking." },
+                { q: "Which producer owns a large part of Clos Saint-Jacques and is known for a very pure style?", a: "Domaine Fourrier." },
+                { q: "The 2011 vintage produced what style of red wines?", a: "Lighter, fruit-forward, and for early drinking." },
+                { q: "What is a 'micro-négociant'?", a: "A domaine owner who also buys grapes to bottle under a separate label." },
+                { q: "Which Vosne-Romanée domaine is known for its pure, elegant style?", a: "Domaine Sylvain Cathiard." },
+                { q: "The 2007 vintage produced what style of red wines?", a: "Light and for early drinking; a lesser vintage." },
+                { q: "Who owns the Clos de la Perrière monopole in Fixin?", a: "Domaine Joliet." },
+                { q: "What is the 'halo effect' in the Burgundy market?", a: "The extreme prices of top wines lifting prices across the entire region." },
+                { q: "Which of these is a top-tier producer in Morey-Saint-Denis?", a: "Domaine Hubert Lignier." },
+                { q: "Which vintage produced approachable wines for medium-term drinking but lacked structure for long aging?", a: "2000." },
+                { q: "What is the winemaking signature of Domaine de la Romanée-Conti?", a: "Vintage-dependent whole-cluster fermentation and 100% new oak." }
+            ]
+        };
+
+        const mainMenu = document.getElementById('main-menu');
+        const gameScreen = document.getElementById('game-screen');
+        const modalContainer = document.getElementById('modal-container');
+        const modalContentWrapper = document.getElementById('modal-content-wrapper');
+        const aiSettingsBtn = document.getElementById('ai-settings-btn');
+
+        let currentModule;
+        let currentQuestionIndex;
+        let score;
+        let questions = [];
+        let userTimeline = [];
+        let historianAvailableEvents = [];
+        let flashcardDeck = [];
+        let currentFlashcardIndex = 0;
+        let userApiKey = localStorage.getItem('geminiApiKey') || '';
+
+        // --- Event Listeners ---
+        document.querySelectorAll('.module-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const module = button.dataset.module;
+                if (module === 'flashcard') {
+                    showFlashcardTopicSelection();
+                } else {
+                    showInstructionalModal(module);
+                }
+            });
+        });
+
+        aiSettingsBtn.addEventListener('click', showAiSettingsModal);
+    	
+        // --- Modal Functions ---
+        function showModal(content) {
+            modalContentWrapper.innerHTML = content;
+            modalContainer.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modalContainer.classList.add('hidden');
+            modalContentWrapper.innerHTML = '';
+        }
+    	
+        function showWelcomeModal() {
+            if (sessionStorage.getItem('welcomed')) return;
+            const content = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">Welcome to the Gauntlet!</h2>
+                    <p class="mb-4 text-gray-300">This is "Côte de Nuits: A Wine Master's Challenge," an interactive study game designed for advanced wine students.</p>
+                    <p class="mb-6 text-gray-300">Test your knowledge across history, terroir, grapes, law, and more. All questions are derived from a comprehensive research document on the region. Good luck!</p>
+                    <button onclick="closeWelcomeModal()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Begin</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function closeWelcomeModal() {
+            sessionStorage.setItem('welcomed', 'true');
+            hideModal();
+        }
+
+        function showInstructionalModal(module) {
+            currentModule = module;
+            const moduleData = gameData[module];
+            const content = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">${moduleData.title}</h2>
+                    <p class="mb-6 text-gray-300">${moduleData.instructions}</p>
+                    <button onclick="startGame()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Start Challenge</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function showEndGameModal() {
+            const moduleData = gameData[currentModule];
+            const content = `
+                <div class="p-6 text-center">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">Module Complete!</h2>
+                    <p class="text-lg mb-2 text-gray-300">You completed "${moduleData.title}".</p>
+                    <p class="text-4xl font-bold mb-6">Score: ${score} / ${questions.length}</p>
+                    <div class="flex space-x-4">
+                        <button onclick="startGame()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Keep Going</button>
+                        <button onclick="returnToMenu()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Main Menu</button>
+                    </div>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function showAiSettingsModal() {
+            const content = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-purple-400">AI Settings</h2>
+                        <button onclick="hideModal()" class="text-gray-400 hover:text-white">&times;</button>
+                    </div>
+                    <p class="mb-4 text-gray-300">To use the AI-powered features, please enter your Google AI Studio API key. You can get a key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-purple-400 hover:underline">aistudio.google.com/app/apikey</a>.</p>
+                    <p class="text-sm text-yellow-400 mb-4">Security Reminder: Treat your API key like a password. It is saved in your browser's local storage for convenience but is not transmitted anywhere else.</p>
+                    <div class="mb-4">
+                        <label for="api-key-input" class="block text-sm font-medium text-gray-300 mb-1">Google AI API Key</label>
+                        <input type="password" id="api-key-input" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" value="${userApiKey}">
+                    </div>
+                    <button onclick="saveApiKey()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Save and Close</button>
+                </div>
+            `;
+            showModal(content);
+        }
+    	
+        function saveApiKey() {
+            userApiKey = document.getElementById('api-key-input').value;
+            localStorage.setItem('geminiApiKey', userApiKey);
+            hideModal();
+        }
+
+        // --- Game Flow ---
+        function startGame() {
+            hideModal();
+            mainMenu.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            score = 0;
+            currentQuestionIndex = 0;
+
+            if (currentModule === 'historian') {
+                questions = shuffleArray([...gameData.historian.questions]).slice(0, 5); // Historian has a fixed number of questions
+                loadHistorianQuestion();
+            } else {
+                const allModuleQuestions = [...gameData[currentModule].questions];
+                const correctLog = JSON.parse(localStorage.getItem('correctlyAnsweredQuestions')) || {};
+                const correctQuestionsForModule = correctLog[currentModule] || [];
+
+                let availableQuestions = allModuleQuestions.filter(q => !correctQuestionsForModule.includes(q.q));
+
+                if (availableQuestions.length === 0 && allModuleQuestions.length > 0) {
+                    const masteryContent = `
+                        <div class="p-6 text-center">
+                            <h2 class="text-2xl font-bold mb-4 text-green-400">Module Mastered!</h2>
+                            <p class="mb-4 text-gray-300">Congratulations! You've correctly answered all questions in this module. Your progress will be reset so you can continue to sharpen your knowledge.</p>
+                            <button onclick="resetAndStartGame()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Play Again</button>
+                        </div>
+                    `;
+                    showModal(masteryContent);
+                    return; 
+                }
+            	
+                questions = shuffleArray(availableQuestions).slice(0, 10);
+                loadQuestion();
+            }
+        }
+
+        function resetAndStartGame() {
+            let correctLog = JSON.parse(localStorage.getItem('correctlyAnsweredQuestions')) || {};
+            correctLog[currentModule] = [];
+            localStorage.setItem('correctlyAnsweredQuestions', JSON.stringify(correctLog));
+            startGame();
+        }
+
+        function returnToMenu() {
+            hideModal();
+            gameScreen.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+            gameScreen.innerHTML = '';
+            checkGlobalMastery();
+        }
+
+        // --- Multiple Choice Logic ---
+        function loadQuestion() {
+            if (questions.length === 0 || currentQuestionIndex >= questions.length) {
+                showEndGameModal();
+                return;
+            }
+
+            const q = questions[currentQuestionIndex];
+            const options = shuffleArray([q.a, ...q.o]);
+        	
+            gameScreen.innerHTML = `
+                <div class="w-full max-w-3xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <button onclick="returnToMenu()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm">← Menu</button>
+                        <p class="text-right text-gray-400">${currentQuestionIndex + 1} / ${questions.length} | Score: ${score}</p>
+                    </div>
+                    <div class="bg-gray-800 p-8 rounded-lg">
+                        <p class="text-xl md:text-2xl font-medium mb-6">${q.q}</p>
+                        <div class="space-y-4">
+                            ${options.map(option => `
+                                <button class="answer-btn block w-full text-left bg-gray-700 p-4 rounded-lg hover:bg-purple-700 transition-colors duration-200" onclick="checkAnswer('${option.replace(/'/g, "\\'")}')">
+                                    ${option}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div id="feedback-container" class="mt-6"></div>
+                    </div>
+                </div>
+            `;
+        }
+    	
+        function nextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+    	
+        function generateAiButtonHtml(question, isCorrect) {
+            if (!question.subjectType || !question.subjectName) {
+                return '';
+            }
+        	
+            let buttonText = isCorrect ? `➡️ Dive Deeper on ${question.subjectName}` : `💡 Learn More about ${question.subjectName}`;
+            if (question.subjectType === 'dish' || question.subjectType === 'wine_pairing') {
+                 buttonText = isCorrect ? `➡️ Explain the Pairing for ${question.subjectName}` : `💡 Learn about Pairing with ${question.subjectName}`;
+            }
+
+            return `<button onclick="handleAiRequest('${question.subjectType}', '${question.subjectName.replace(/'/g, "\\'")}')" class="mt-4 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded text-sm">${buttonText}</button>`;
+        }
+
+        function checkAnswer(selectedOption) {
+            const q = questions[currentQuestionIndex];
+            const isCorrect = selectedOption === q.a;
+            const feedbackContainer = document.getElementById('feedback-container');
+        	
+            let feedbackHtml = '';
+            if (isCorrect) {
+                score++;
+                const questionText = q.q;
+                let correctLog = JSON.parse(localStorage.getItem('correctlyAnsweredQuestions')) || {};
+                if (!correctLog[currentModule]) {
+                    correctLog[currentModule] = [];
+                }
+                if (!correctLog[currentModule].includes(questionText)) {
+                    correctLog[currentModule].push(questionText);
+                }
+                localStorage.setItem('correctlyAnsweredQuestions', JSON.stringify(correctLog));
+
+                feedbackHtml = `<div class="p-4 rounded-lg bg-green-900 border border-green-700">
+                                    <p class="font-bold text-green-300">Correct!</p>
+                                    <p class="text-green-400">${q.a}</p>
+                                    ${generateAiButtonHtml(q, true)}
+                                </div>`;
+            } else {
+                feedbackHtml = `<div class="p-4 rounded-lg bg-red-900 border border-red-700">
+                                    <p class="font-bold text-red-300">Incorrect.</p>
+                                    <p class="text-red-400">The correct answer was: ${q.a}</p>
+                                     ${generateAiButtonHtml(q, false)}
+                                </div>`;
+            }
+
+            feedbackContainer.innerHTML = feedbackHtml;
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.disabled = true;
+                if(btn.innerText === q.a) {
+                    btn.classList.remove('hover:bg-purple-700');
+                    btn.classList.add('bg-green-700');
+                }
+            });
+            feedbackContainer.innerHTML += `<button onclick="nextQuestion()" class="mt-4 w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Continue</button>`;
+        }
+    	
+        // --- Historian's Scroll Logic ---
+        function loadHistorianQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                showEndGameModal();
+                return;
+            }
+
+            const q = questions[currentQuestionIndex];
+            userTimeline = [];
+        	
+            const eventsWithIds = q.events.map((event, index) => ({ ...event, id: `${currentQuestionIndex}-${index}` }));
+            historianAvailableEvents = shuffleArray(eventsWithIds);
+
+            gameScreen.innerHTML = `
+                <div class="w-full max-w-4xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <button onclick="returnToMenu()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-sm">← Menu</button>
+                        <p class="text-center text-gray-400">Question ${currentQuestionIndex + 1} / ${questions.length} | Score: ${score}</p>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <p class="text-xl text-center font-medium mb-6">${q.question}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="font-bold text-lg mb-2 text-purple-400 text-center">Available Events</h3>
+                                <div id="available-events" class="space-y-2">
+                                    ${historianAvailableEvents.map(event => `
+                                        <button data-id="${event.id}" class="timeline-item w-full text-left bg-gray-700 p-3 rounded hover:bg-purple-800 transition-colors duration-200">
+                                            ${event.text}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg mb-2 text-purple-400 text-center">Your Timeline (Earliest to Latest)</h3>
+                                <div id="user-timeline" class="space-y-2 bg-gray-900 p-3 rounded-lg min-h-[200px]"></div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-6">
+                            <button id="submit-timeline" class="bg-purple-700 hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-lg" onclick="checkTimeline()">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        	
+            document.querySelectorAll('#available-events .timeline-item').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const eventId = e.currentTarget.dataset.id;
+                    const event = historianAvailableEvents.find(ev => ev.id === eventId);
+                    if (event && !userTimeline.some(e => e.id === event.id)) {
+                        userTimeline.push(event);
+                        e.currentTarget.classList.add('selected', 'opacity-50', 'cursor-not-allowed');
+                        e.currentTarget.disabled = true;
+                        renderUserTimeline();
+                    }
+                });
+            });
+        }
+    	
+        function renderUserTimeline() {
+            const timelineContainer = document.getElementById('user-timeline');
+            timelineContainer.innerHTML = userTimeline.map((event, index) => `
+                <div class="bg-purple-900 p-3 rounded flex items-center justify-between">
+                    <span>${index + 1}. ${event.text}</span>
+                    <button class="text-red-400 hover:text-red-200 font-bold" onclick="removeFromTimeline('${event.id}')">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFromTimeline(eventId) {
+            const indexToRemove = userTimeline.findIndex(event => event.id === eventId);
+
+            if (indexToRemove > -1) {
+                userTimeline.splice(indexToRemove, 1);
+                const buttonToReEnable = document.querySelector(`#available-events .timeline-item[data-id="${eventId}"]`);
+                if (buttonToReEnable) {
+                    buttonToReEnable.disabled = false;
+                    buttonToReEnable.classList.remove('selected', 'opacity-50', 'cursor-not-allowed');
+                }
+                renderUserTimeline();
+            }
+        }
+
+        function checkTimeline() {
+            const q = questions[currentQuestionIndex];
+            const correctTimeline = [...q.events].sort((a, b) => a.date - b.date);
+            let isCompletelyCorrect = userTimeline.length === correctTimeline.length;
+        	
+            if (isCompletelyCorrect) {
+                for (let i = 0; i < correctTimeline.length; i++) {
+                    if (userTimeline[i].text !== correctTimeline[i].text) {
+                        isCompletelyCorrect = false;
+                        break;
+                    }
+                }
+            }
+        	
+            if(isCompletelyCorrect) {
+                score++;
+            }
+
+            const userTimelineHtml = userTimeline.map((event, i) => {
+                const isEventInCorrectPosition = correctTimeline[i] && correctTimeline[i].text === event.text;
+                const borderColor = isEventInCorrectPosition ? 'border-green-500' : 'border-red-500';
+                return `<li class="p-2 bg-gray-700 rounded border-2 ${borderColor}">${event.text}</li>`;
+            }).join('');
+
+            const correctTimelineHtml = correctTimeline.map(e => 
+                `<li class="p-2 bg-gray-700 rounded border-2 border-green-500">${e.text} <span class="text-gray-400 text-sm">(${e.date})</span></li>`
+            ).join('');
+        	
+            const feedbackContent = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 ${isCompletelyCorrect ? 'text-green-400' : 'text-yellow-400'}">${isCompletelyCorrect ? 'Perfect!' : 'Review Your Timeline'}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-bold text-lg mb-2 text-purple-400">Your Timeline</h3>
+                            <ol class="list-decimal list-inside space-y-2">
+                                ${userTimelineHtml}
+                            </ol>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg mb-2 text-purple-400">Correct Timeline</h3>
+                            <ol class="list-decimal list-inside space-y-2">
+                                ${correctTimelineHtml}
+                            </ol>
+                        </div>
+                    </div>
+                    <button onclick="nextHistorianQuestion()" class="mt-6 w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Continue</button>
+                </div>
+            `;
+            showModal(feedbackContent);
+        }
+
+        function nextHistorianQuestion() {
+            hideModal();
+            currentQuestionIndex++;
+            loadHistorianQuestion();
+        }
+
+        // --- Mastery Logic ---
+        function checkGlobalMastery() {
+            if (sessionStorage.getItem('globalMasteryAcknowledged')) {
+                return;
+            }
+
+            const modulesToMaster = ['terroir', 'ampelographer', 'lawmaker', 'gastronome', 'critic'];
+            const correctLog = JSON.parse(localStorage.getItem('correctlyAnsweredQuestions')) || {};
+        	
+            let allMastered = true;
+            for (const module of modulesToMaster) {
+                const totalQuestions = gameData[module].questions.length;
+                const correctlyAnswered = (correctLog[module] || []).length;
+                if (correctlyAnswered < totalQuestions) {
+                    allMastered = false;
+                    break;
+                }
+            }
+
+            if (allMastered) {
+                showGlobalMasteryModal();
+            }
+        }
+
+        function showGlobalMasteryModal() {
+            const content = `
+                <div class="p-6 text-center">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">Congratulations, Wine Master!</h2>
+                    <p class="mb-4 text-gray-300">You have demonstrated exceptional knowledge by correctly answering every question across all core modules. You have truly mastered the Côte de Nuits!</p>
+                    <p class="mb-6 text-gray-300">To keep your expertise sharp, continue to practice with the <strong>Flashcard Study</strong> decks.</p>
+                    <button onclick="closeGlobalMasteryModal()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Continue</button>
+                </div>
+            `;
+            showModal(content);
+        }
+
+        function closeGlobalMasteryModal() {
+            sessionStorage.setItem('globalMasteryAcknowledged', 'true');
+            hideModal();
+        }
+
+        // --- Flashcard Logic ---
+        function showFlashcardTopicSelection() {
+            const topics = Object.keys(flashcardData); // Use flashcardData keys
+            const content = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-400">Build Your Flashcard Deck</h2>
+                    <p class="mb-6 text-gray-300">Select the topics you want to study. These decks cover the entire source document.</p>
+                    <div id="flashcard-topics" class="space-y-2 mb-4">
+                        ${topics.map(topic => `
+                            <label class="flex items-center bg-gray-700 p-3 rounded-lg hover:bg-gray-600 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500" data-topic="${topic}">
+                                <span class="ml-3 text-white">${gameData[topic].title}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                     <label class="flex items-center bg-gray-700 p-3 rounded-lg hover:bg-gray-600 cursor-pointer mb-6">
+                        <input type="checkbox" id="select-all-topics" class="form-checkbox h-5 w-5 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500">
+                        <span class="ml-3 text-white font-bold">Select All</span>
+                    </label>
+                    <button onclick="startFlashcardSession()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Start Studying</button>
+                </div>
+            `;
+            showModal(content);
+        	
+            document.getElementById('select-all-topics').addEventListener('change', (e) => {
+                document.querySelectorAll('#flashcard-topics input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+            });
+        }
+
+        function startFlashcardSession() {
+            flashcardDeck = [];
+            const selectedTopics = Array.from(document.querySelectorAll('#flashcard-topics input:checked')).map(cb => cb.dataset.topic);
+
+            if (selectedTopics.length === 0) {
+                showModal(`<div class="p-6 text-center">
+                    <p class="text-lg text-yellow-400 mb-4">Please select at least one topic.</p>
+                    <button onclick="showFlashcardTopicSelection()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Go Back</button>
+                </div>`);
+                return;
+            }
+
+            selectedTopics.forEach(topic => {
+                if (flashcardData[topic]) {
+                    flashcardDeck.push(...flashcardData[topic]);
+                }
+            });
+
+            flashcardDeck = shuffleArray(flashcardDeck);
+            currentFlashcardIndex = 0;
+            hideModal();
+            mainMenu.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            loadFlashcard();
+        }
+
+        function loadFlashcard() {
+            if (flashcardDeck.length === 0) {
+                gameScreen.innerHTML = `<div class="text-center">
+                    <p class="text-2xl mb-4">No topics selected.</p>
+                    <button onclick="returnToMenu()" class="bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Main Menu</button>
+                </div>`;
+                return;
+            }
+            const card = flashcardDeck[currentFlashcardIndex];
+            gameScreen.innerHTML = `
+                <div class="w-full max-w-2xl flex flex-col items-center">
+                    <p class="text-gray-400 mb-4">${currentFlashcardIndex + 1} / ${flashcardDeck.length}</p>
+                    <div class="flashcard-container w-full h-80 mb-6">
+                        <div class="flashcard" onclick="this.classList.toggle('is-flipped')">
+                            <div class="flashcard-face flashcard-front text-2xl font-semibold">${card.q}</div>
+                            <div class="flashcard-face flashcard-back text-xl overflow-y-auto">${card.a}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between w-full">
+                        <button id="prev-card" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded">&larr; Previous</button>
+                        <button onclick="returnToMenu()" class="bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-6 rounded">End Session</button>
+                        <button id="next-card" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded">Next &rarr;</button>
+                    </div>
+                </div>
+            `;
+        	
+            document.getElementById('prev-card').addEventListener('click', () => {
+                if (currentFlashcardIndex > 0) {
+                    currentFlashcardIndex--;
+                    loadFlashcard();
+                }
+            });
+            document.getElementById('next-card').addEventListener('click', () => {
+                if (currentFlashcardIndex < flashcardDeck.length - 1) {
+                    currentFlashcardIndex++;
+                    loadFlashcard();
+                }
+            });
+        }
+    	
+        // --- AI Integration ---
+        async function handleAiRequest(subjectType, subjectName) {
+            if (!userApiKey) {
+                showModal(`<div class="p-6 text-center">
+                    <h2 class="text-2xl font-bold mb-4 text-yellow-400">API Key Required</h2>
+                    <p class="mb-4 text-gray-300">Please set your Google AI API key in the 'AI Settings' on the main menu to use this feature.</p>
+                    <button onclick="hideModal()" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Close</button>
+                </div>`);
+                return;
+            }
+
+            let prompt;
+            let title;
+            const region = "Côte de Nuits";
+
+            switch (subjectType) {
+                case 'clone':
+                case 'grape':
+                case 'viticulture':
+                    title = `Ampelography Profile: ${subjectName}`;
+                    prompt = `You are a master ampelographer and wine educator with a specialization in ${region}. Your task is to profile the grape, clone, or viticultural concept: ${subjectName}. Your response must follow this strict pyramid of importance: 1. The subject's specific expression and role within ${region}. 2. Its general viticultural characteristics as they manifest in ${region}'s climate. 3. Its history within the region. Your entire response must be framed through the lens of ${region}. Synthesize information from authoritative sources, but always prioritize the context of ${region}. Structure your response with the following sections: Overview and History in ${region}, Viticultural Characteristics in ${region}, and Typical ${region} Wine Profile. Format the output in simple HTML.`;
+                    break;
+                case 'wine':
+                case 'producer':
+                case 'vintage':
+                case 'place':
+                case 'wine_style':
+                case 'critic':
+                case 'market':
+                    title = `Critic's Focus: ${subjectName}`;
+                    prompt = `You are a world-renowned wine critic specializing exclusively in the wines of ${region}. Your task is to write a professional profile for the following iconic ${region} topic: ${subjectName}. Your analysis must adhere to a strict pyramid of importance: 1) The specific subject's style or character. 2) The character of its specific appellation within ${region}. 3) The general characteristics of ${region}. Do not mention wines from other regions unless making a direct, essential stylistic comparison. Synthesize information from authoritative sources like Burghound, Vinous, and JancisRobinson.com, but ensure the final note is your own expert synthesis. Format in simple HTML.`;
+                    break;
+                case 'dish':
+                case 'wine_pairing':
+                    title = `Gastronomic Pairing: ${subjectName}`;
+                    prompt = `You are a master sommelier and food theorist specializing in the cuisine and wine of ${region}. Your task is to explain the classic wine pairing for the dish: ${subjectName}. Your explanation must follow this strict pyramid of importance: 1. The specific characteristics of the dish as found in the region. 2. The typical profile of a ${region} wine that pairs with it. 3. The underlying gastronomic principles (complement, contrast, texture) that make the pairing successful within the context of the region's culture. Synthesize information from expert sources, but frame your entire response within the context of ${region}. Format in simple HTML.`;
+                    break;
+                case 'ingredient':
+                case 'gastronomy':
+                    title = `Ingredient Focus: ${subjectName}`;
+                    prompt = `You are a food and wine expert specializing in the cuisine of Burgundy and ${region}. Your task is to provide a detailed overview of the ingredient: ${subjectName}. Your response must follow this strict pyramid of importance: 1. How this ingredient is used in the local cuisine of ${region}. 2. Its typical flavor and aromatic profile. 3. How its profile might be reflected in or complement the local wines, but do not focus on specific pairings unless it is intrinsic to the ingredient itself. Synthesize from authoritative sources. Format in simple HTML.`;
+                    break;
+                case 'beverage':
+                    title = `Beverage Profile: ${subjectName}`;
+                    prompt = `You are an expert on the spirits and liqueurs of France, with a specialization in ${region}. Your task is to provide a detailed overview of ${subjectName}. Your response must follow this strict pyramid of importance: 1. How ${subjectName} is made and consumed specifically within ${region}. 2. Its key ingredients and typical flavor profile. 3. Its cultural significance in ${region}. Do not focus on wine pairings unless it is a key part of its consumption. Synthesize information from authoritative sources. Format in simple HTML.`;
+                    break;
+                default:
+                    title = `Expert Overview: ${subjectName}`;
+                    prompt = `You are a wine and food expert specializing in ${region}. Provide a concise and informative overview of the following topic: ${subjectName}, ensuring your response is strictly relevant to its context within ${region}. Format in simple HTML.`;
+            }
+        	
+            showModal(`<div class="p-6 text-center">
+                <h2 class="text-2xl font-bold mb-4 text-purple-400">Generating AI Response...</h2>
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
+                <p class="mt-4 text-gray-400">Please wait, contacting the master sommelier...</p>
+            </div>`);
+
+            try {
+                const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+            	
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || `API request failed with status ${response.status}`);
+                }
+
+                const result = await response.json();
+            	
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    const aiContent = `
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-2xl font-bold text-purple-400">${title}</h2>
+                                <button onclick="hideModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                            </div>
+                            <div class="prose prose-invert prose-purple max-w-none">${text.replace(/\n/g, '<br>')}</div>
+                        </div>`;
+                    showModal(aiContent);
+                } else {
+                     throw new Error("Invalid response structure from API.");
+                }
+
+            } catch (error) {
+                console.error("AI Generation Error:", error);
+                const errorContent = `
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-4 text-red-400">Error</h2>
+                        <p class="mb-4 text-gray-300">Could not generate AI response. Please check your API key and network connection.</p>
+                        <p class="text-sm text-gray-500 bg-gray-900 p-2 rounded">${error.message}</p>
+                        <button onclick="hideModal()" class="mt-4 w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded">Close</button>
+                    </div>`;
+                showModal(errorContent);
+            }
+        }
+
+        // --- Utility Functions ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Initial Load ---
+        window.onload = showWelcomeModal;
+
+    </script>
+</body>
+</html>
